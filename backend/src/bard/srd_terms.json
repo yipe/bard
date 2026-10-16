@@ -1,0 +1,6426 @@
+{
+"license": "This work includes material from the System Reference Document 5.1 and 5.2 (SRD 5.1, SRD 5.2) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD is licensed under the Creative Commons Attribution 4.0 International License, https://creativecommons.org/licenses/by/4.0/legalcode.",
+"source": "SRD 5.1 and SRD 5.2",
+"terms": [
+[
+"Abacus",
+"item"
+],
+[
+"Ability Check",
+"term"
+],
+[
+"Ability Score Improvement",
+"term"
+],
+[
+"Ability Score and Modifier",
+"term"
+],
+[
+"Aboleth",
+"creature"
+],
+[
+"Abyssal",
+"term"
+],
+[
+"Acid",
+"item"
+],
+[
+"Acid Arrow",
+"spell"
+],
+[
+"Acid Splash",
+"spell"
+],
+[
+"Acolyte",
+"creature"
+],
+[
+"Acrobatics",
+"term"
+],
+[
+"Action",
+"term"
+],
+[
+"Adult Black Dragon",
+"creature"
+],
+[
+"Adult Blue Dragon",
+"creature"
+],
+[
+"Adult Brass Dragon",
+"creature"
+],
+[
+"Adult Bronze Dragon",
+"creature"
+],
+[
+"Adult Copper Dragon",
+"creature"
+],
+[
+"Adult Gold Dragon",
+"creature"
+],
+[
+"Adult Green Dragon",
+"creature"
+],
+[
+"Adult Red Dragon",
+"creature"
+],
+[
+"Adult Silver Dragon",
+"creature"
+],
+[
+"Adult White Dragon",
+"creature"
+],
+[
+"Advantage",
+"term"
+],
+[
+"Adventure",
+"term"
+],
+[
+"Aid",
+"spell"
+],
+[
+"Air",
+"item"
+],
+[
+"Air Elemental",
+"creature"
+],
+[
+"Alarm",
+"spell"
+],
+[
+"Alchemist's Fire",
+"item"
+],
+[
+"Alchemist's Supplies",
+"item"
+],
+[
+"Ale",
+"item"
+],
+[
+"Alert",
+"term"
+],
+[
+"Alignment",
+"term"
+],
+[
+"Allosaurus",
+"creature"
+],
+[
+"Ally",
+"term"
+],
+[
+"Alter Self",
+"spell"
+],
+[
+"Amulet",
+"item"
+],
+[
+"Amulet of Health",
+"item"
+],
+[
+"Amulet of Proof against Detection and Location",
+"item"
+],
+[
+"Amulet of the Planes",
+"item"
+],
+[
+"Ancient Black Dragon",
+"creature"
+],
+[
+"Ancient Blue Dragon",
+"creature"
+],
+[
+"Ancient Brass Dragon",
+"creature"
+],
+[
+"Ancient Bronze Dragon",
+"creature"
+],
+[
+"Ancient Copper Dragon",
+"creature"
+],
+[
+"Ancient Gold Dragon",
+"creature"
+],
+[
+"Ancient Green Dragon",
+"creature"
+],
+[
+"Ancient Red Dragon",
+"creature"
+],
+[
+"Ancient Silver Dragon",
+"creature"
+],
+[
+"Ancient White Dragon",
+"creature"
+],
+[
+"Androsphinx",
+"creature"
+],
+[
+"Animal Friendship",
+"spell"
+],
+[
+"Animal Handling",
+"term"
+],
+[
+"Animal Messenger",
+"spell"
+],
+[
+"Animal Shapes",
+"spell"
+],
+[
+"Animate Dead",
+"spell"
+],
+[
+"Animate Objects",
+"spell"
+],
+[
+"Animated Armor",
+"creature"
+],
+[
+"Animated Flying Sword",
+"creature"
+],
+[
+"Animated Object",
+"creature"
+],
+[
+"Animated Rug of Smothering",
+"creature"
+],
+[
+"Animated Shield",
+"item"
+],
+[
+"Ankheg",
+"creature"
+],
+[
+"Ankylosaurus",
+"creature"
+],
+[
+"Antilife Shell",
+"spell"
+],
+[
+"Antimagic Field",
+"spell"
+],
+[
+"Antipathy/Sympathy",
+"spell"
+],
+[
+"Antitoxin",
+"item"
+],
+[
+"Anubis",
+"npc"
+],
+[
+"Ape",
+"creature"
+],
+[
+"Apep",
+"npc"
+],
+[
+"Aphrodite",
+"npc"
+],
+[
+"Apollo",
+"npc"
+],
+[
+"Apparatus of the Crab",
+"item"
+],
+[
+"Arawn",
+"npc"
+],
+[
+"Arcana",
+"term"
+],
+[
+"Arcane Eye",
+"spell"
+],
+[
+"Arcane Hand",
+"spell"
+],
+[
+"Arcane Lock",
+"spell"
+],
+[
+"Arcane Sword",
+"spell"
+],
+[
+"Arcanist's Magic Aura",
+"spell"
+],
+[
+"Archelon",
+"creature"
+],
+[
+"Archery",
+"term"
+],
+[
+"Archmage",
+"creature"
+],
+[
+"Area of Effect",
+"term"
+],
+[
+"Ares",
+"npc"
+],
+[
+"Armor Class",
+"term"
+],
+[
+"Armor Training",
+"term"
+],
+[
+"Armor of Invulnerability",
+"item"
+],
+[
+"Armor of Vulnerability",
+"item"
+],
+[
+"Arrow",
+"item"
+],
+[
+"Arrow-Catching Shield",
+"item"
+],
+[
+"Arrows",
+"item"
+],
+[
+"Artemis",
+"npc"
+],
+[
+"Assassin",
+"creature"
+],
+[
+"Assassin's Blood",
+"item"
+],
+[
+"Astral Projection",
+"spell"
+],
+[
+"Athena",
+"npc"
+],
+[
+"Athletics",
+"term"
+],
+[
+"Attack",
+"term"
+],
+[
+"Attack Roll",
+"term"
+],
+[
+"Attitude",
+"term"
+],
+[
+"Attunement",
+"term"
+],
+[
+"Augury",
+"spell"
+],
+[
+"Aura of Life",
+"spell"
+],
+[
+"Avatar of Death",
+"creature"
+],
+[
+"Awaken",
+"spell"
+],
+[
+"Awakened Shrub",
+"creature"
+],
+[
+"Awakened Tree",
+"creature"
+],
+[
+"Axe Beak",
+"creature"
+],
+[
+"Azer",
+"creature"
+],
+[
+"Azer Sentinel",
+"creature"
+],
+[
+"Baboon",
+"creature"
+],
+[
+"Backpack",
+"item"
+],
+[
+"Badger",
+"creature"
+],
+[
+"Bag of Beans",
+"item"
+],
+[
+"Bag of Devouring",
+"item"
+],
+[
+"Bag of Holding",
+"item"
+],
+[
+"Bag of Tricks, Gray",
+"item"
+],
+[
+"Bag of Tricks, Rust",
+"item"
+],
+[
+"Bag of Tricks, Tan",
+"item"
+],
+[
+"Bagpipes",
+"item"
+],
+[
+"Ball Bearing",
+"item"
+],
+[
+"Ball Bearings",
+"item"
+],
+[
+"Balor",
+"creature"
+],
+[
+"Bandit",
+"creature"
+],
+[
+"Bandit Captain",
+"creature"
+],
+[
+"Bane",
+"spell"
+],
+[
+"Banishment",
+"spell"
+],
+[
+"Barbarian",
+"term"
+],
+[
+"Barbed Devil",
+"creature"
+],
+[
+"Bard",
+"term"
+],
+[
+"Barkskin",
+"spell"
+],
+[
+"Barrel",
+"item"
+],
+[
+"Basic Poison",
+"item"
+],
+[
+"Basilisk",
+"creature"
+],
+[
+"Basket",
+"item"
+],
+[
+"Bast",
+"npc"
+],
+[
+"Bat",
+"creature"
+],
+[
+"Battleaxe",
+"item"
+],
+[
+"Beacon of Hope",
+"spell"
+],
+[
+"Bead of Force",
+"item"
+],
+[
+"Bead of Nourishment",
+"item"
+],
+[
+"Bearded Devil",
+"creature"
+],
+[
+"Bedroll",
+"item"
+],
+[
+"Befuddlement",
+"spell"
+],
+[
+"Behir",
+"creature"
+],
+[
+"Belenus",
+"npc"
+],
+[
+"Bell",
+"item"
+],
+[
+"Belt of Cloud Giant Strength",
+"item"
+],
+[
+"Belt of Dwarvenkind",
+"item"
+],
+[
+"Belt of Fire Giant Strength",
+"item"
+],
+[
+"Belt of Frost Giant Strength",
+"item"
+],
+[
+"Belt of Hill Giant Strength",
+"item"
+],
+[
+"Belt of Stone Giant Strength",
+"item"
+],
+[
+"Belt of Storm Giant Strength",
+"item"
+],
+[
+"Berserker",
+"creature"
+],
+[
+"Bes",
+"npc"
+],
+[
+"Bestow Curse",
+"spell"
+],
+[
+"Bit and bridle",
+"item"
+],
+[
+"Black Bear",
+"creature"
+],
+[
+"Black Dragon Scale Mail",
+"item"
+],
+[
+"Black Dragon Wyrmling",
+"creature"
+],
+[
+"Black Pudding",
+"creature"
+],
+[
+"Black Tentacles",
+"spell"
+],
+[
+"Blade Barrier",
+"spell"
+],
+[
+"Blanket",
+"item"
+],
+[
+"Bless",
+"spell"
+],
+[
+"Blight",
+"spell"
+],
+[
+"Blinded",
+"term"
+],
+[
+"Blindness/Deafness",
+"spell"
+],
+[
+"Blink",
+"spell"
+],
+[
+"Blink Dog",
+"creature"
+],
+[
+"Block and Tackle",
+"item"
+],
+[
+"Blood Hawk",
+"creature"
+],
+[
+"Blowgun",
+"item"
+],
+[
+"Blowgun Needle",
+"item"
+],
+[
+"Blowgun Needles",
+"item"
+],
+[
+"Bludgeoning",
+"item"
+],
+[
+"Blue Dragon Scale Mail",
+"item"
+],
+[
+"Blue Dragon Wyrmling",
+"creature"
+],
+[
+"Blur",
+"spell"
+],
+[
+"Boar",
+"creature"
+],
+[
+"Bolt",
+"item"
+],
+[
+"Bolts",
+"item"
+],
+[
+"Bone Devil",
+"creature"
+],
+[
+"Bonus Action",
+"term"
+],
+[
+"Book",
+"item"
+],
+[
+"Boon of Combat Prowess",
+"term"
+],
+[
+"Boon of Dimensional Travel",
+"term"
+],
+[
+"Boon of Fate",
+"term"
+],
+[
+"Boon of Irresistible Offense",
+"term"
+],
+[
+"Boon of Spell Recall",
+"term"
+],
+[
+"Boon of Truesight",
+"term"
+],
+[
+"Boon of the Night Spirit",
+"term"
+],
+[
+"Boots of Elvenkind",
+"item"
+],
+[
+"Boots of Levitation",
+"item"
+],
+[
+"Boots of Speed",
+"item"
+],
+[
+"Boots of Striding and Springing",
+"item"
+],
+[
+"Boots of the Winterlands",
+"item"
+],
+[
+"Bowl of Commanding Water Elementals",
+"item"
+],
+[
+"Bracers of Archery",
+"item"
+],
+[
+"Bracers of Defense",
+"item"
+],
+[
+"Branding Smite",
+"spell"
+],
+[
+"Brass Dragon Scale Mail",
+"item"
+],
+[
+"Brass Dragon Wyrmling",
+"creature"
+],
+[
+"Brazier of Commanding Fire Elementals",
+"item"
+],
+[
+"Bread",
+"item"
+],
+[
+"Breaking Objects",
+"term"
+],
+[
+"Breastplate",
+"item"
+],
+[
+"Brewer's Supplies",
+"item"
+],
+[
+"Brigantia",
+"npc"
+],
+[
+"Bright Light",
+"term"
+],
+[
+"Bronze Dragon Scale Mail",
+"item"
+],
+[
+"Bronze Dragon Wyrmling",
+"creature"
+],
+[
+"Brooch of Shielding",
+"item"
+],
+[
+"Broom of Flying",
+"item"
+],
+[
+"Brown Bear",
+"creature"
+],
+[
+"Bucket",
+"item"
+],
+[
+"Bugbear",
+"creature"
+],
+[
+"Bugbear Stalker",
+"creature"
+],
+[
+"Bugbear Warrior",
+"creature"
+],
+[
+"Bulette",
+"creature"
+],
+[
+"Bullseye Lantern",
+"item"
+],
+[
+"Burglar's Pack",
+"item"
+],
+[
+"Burning Hands",
+"spell"
+],
+[
+"Burnt Othur Fumes",
+"item"
+],
+[
+"Burrow Speed",
+"term"
+],
+[
+"Cackle Fever",
+"term"
+],
+[
+"Call Lightning",
+"spell"
+],
+[
+"Calligrapher's Supplies",
+"item"
+],
+[
+"Calm Emotions",
+"spell"
+],
+[
+"Caltrop",
+"item"
+],
+[
+"Caltrops",
+"item"
+],
+[
+"Camel",
+"creature"
+],
+[
+"Campaign",
+"term"
+],
+[
+"Candle",
+"item"
+],
+[
+"Candle of Invocation",
+"item"
+],
+[
+"Cantrip",
+"item"
+],
+[
+"Canvas",
+"item"
+],
+[
+"Cape of the Mountebank",
+"item"
+],
+[
+"Carpenter's Tools",
+"item"
+],
+[
+"Carriage",
+"item"
+],
+[
+"Carrying Capacity",
+"term"
+],
+[
+"Cart",
+"item"
+],
+[
+"Cartographer's Tools",
+"item"
+],
+[
+"Cast a Spell",
+"term"
+],
+[
+"Cat",
+"creature"
+],
+[
+"Celestial",
+"term"
+],
+[
+"Censer of Controlling Air Elementals",
+"item"
+],
+[
+"Centaur",
+"creature"
+],
+[
+"Centaur Trooper",
+"creature"
+],
+[
+"Chain",
+"item"
+],
+[
+"Chain Devil",
+"creature"
+],
+[
+"Chain Lightning",
+"spell"
+],
+[
+"Chain Mail",
+"item"
+],
+[
+"Chain Shirt",
+"item"
+],
+[
+"Chalk",
+"item"
+],
+[
+"Challenge Rating",
+"term"
+],
+[
+"Champion",
+"term"
+],
+[
+"Character Sheet",
+"term"
+],
+[
+"Chariot",
+"item"
+],
+[
+"Charm Monster",
+"spell"
+],
+[
+"Charm Person",
+"spell"
+],
+[
+"Charmed",
+"term"
+],
+[
+"Cheese",
+"item"
+],
+[
+"Chest",
+"item"
+],
+[
+"Chicken",
+"item"
+],
+[
+"Chill Touch",
+"spell"
+],
+[
+"Chime of Opening",
+"item"
+],
+[
+"Chimera",
+"creature"
+],
+[
+"Chromatic Orb",
+"spell"
+],
+[
+"Chunk of Meat",
+"item"
+],
+[
+"Chuul",
+"creature"
+],
+[
+"Cinnamon",
+"item"
+],
+[
+"Circle of Death",
+"spell"
+],
+[
+"Circle of the Land",
+"term"
+],
+[
+"Circlet of Blasting",
+"item"
+],
+[
+"Clairvoyance",
+"spell"
+],
+[
+"Clay Golem",
+"creature"
+],
+[
+"Cleric",
+"term"
+],
+[
+"Climb Speed",
+"term"
+],
+[
+"Climber's Kit",
+"item"
+],
+[
+"Climbing",
+"term"
+],
+[
+"Cloak of Arachnida",
+"item"
+],
+[
+"Cloak of Displacement",
+"item"
+],
+[
+"Cloak of Elvenkind",
+"item"
+],
+[
+"Cloak of Invisibility",
+"item"
+],
+[
+"Cloak of Protection",
+"item"
+],
+[
+"Cloak of the Bat",
+"item"
+],
+[
+"Cloak of the Manta Ray",
+"item"
+],
+[
+"Cloaker",
+"creature"
+],
+[
+"Clone",
+"spell"
+],
+[
+"Cloud Giant",
+"creature"
+],
+[
+"Cloudkill",
+"spell"
+],
+[
+"Cloves",
+"item"
+],
+[
+"Club",
+"item"
+],
+[
+"Cobbler's Tools",
+"item"
+],
+[
+"Cockatrice",
+"creature"
+],
+[
+"College of Lore",
+"term"
+],
+[
+"Color Spray",
+"spell"
+],
+[
+"Command",
+"spell"
+],
+[
+"Common",
+"term"
+],
+[
+"Common Clothes",
+"item"
+],
+[
+"Common Sign Language",
+"term"
+],
+[
+"Common Wine",
+"item"
+],
+[
+"Commoner",
+"creature"
+],
+[
+"Commune",
+"spell"
+],
+[
+"Commune with Nature",
+"spell"
+],
+[
+"Component Pouch",
+"item"
+],
+[
+"Comprehend Languages",
+"spell"
+],
+[
+"Compulsion",
+"spell"
+],
+[
+"Condition",
+"term"
+],
+[
+"Cone [Area of Effect]",
+"term"
+],
+[
+"Cone of Cold",
+"spell"
+],
+[
+"Confusion",
+"spell"
+],
+[
+"Conjure Animals",
+"spell"
+],
+[
+"Conjure Celestial",
+"spell"
+],
+[
+"Conjure Elemental",
+"spell"
+],
+[
+"Conjure Fey",
+"spell"
+],
+[
+"Conjure Minor Elementals",
+"spell"
+],
+[
+"Conjure Woodland Beings",
+"spell"
+],
+[
+"Constrictor Snake",
+"creature"
+],
+[
+"Contact",
+"item"
+],
+[
+"Contact Other Plane",
+"spell"
+],
+[
+"Contagion",
+"spell"
+],
+[
+"Contingency",
+"spell"
+],
+[
+"Continual Flame",
+"spell"
+],
+[
+"Control Water",
+"spell"
+],
+[
+"Control Weather",
+"spell"
+],
+[
+"Cook's Utensils",
+"item"
+],
+[
+"Copper",
+"item"
+],
+[
+"Copper Dragon Scale Mail",
+"item"
+],
+[
+"Copper Dragon Wyrmling",
+"creature"
+],
+[
+"Costume",
+"item"
+],
+[
+"Costume Clothes",
+"item"
+],
+[
+"Cotton Cloth",
+"item"
+],
+[
+"Couatl",
+"creature"
+],
+[
+"Counterspell",
+"spell"
+],
+[
+"Cover",
+"term"
+],
+[
+"Cow",
+"item"
+],
+[
+"Crab",
+"creature"
+],
+[
+"Crawler Mucus",
+"item"
+],
+[
+"Crawling",
+"term"
+],
+[
+"Create Food and Water",
+"spell"
+],
+[
+"Create Undead",
+"spell"
+],
+[
+"Create or Destroy Water",
+"spell"
+],
+[
+"Creation",
+"spell"
+],
+[
+"Creature",
+"term"
+],
+[
+"Creature Type",
+"term"
+],
+[
+"Critical Hit",
+"term"
+],
+[
+"Crocodile",
+"creature"
+],
+[
+"Crossbow Bolt",
+"item"
+],
+[
+"Crossbow Bolt Case",
+"item"
+],
+[
+"Crossbow Bolts",
+"item"
+],
+[
+"Crowbar",
+"item"
+],
+[
+"Crystal",
+"item"
+],
+[
+"Crystal Ball",
+"item"
+],
+[
+"Crystal Ball of Mind Reading",
+"item"
+],
+[
+"Crystal Ball of Telepathy",
+"item"
+],
+[
+"Crystal Ball of True Seeing",
+"item"
+],
+[
+"Cube [Area of Effect]",
+"term"
+],
+[
+"Cube of Force",
+"item"
+],
+[
+"Cubic Gate",
+"item"
+],
+[
+"Cult Fanatic",
+"creature"
+],
+[
+"Cultist",
+"creature"
+],
+[
+"Cultist Fanatic",
+"creature"
+],
+[
+"Cure Wounds",
+"spell"
+],
+[
+"Curses",
+"term"
+],
+[
+"Cylinder [Area of Effect]",
+"term"
+],
+[
+"Dagger",
+"item"
+],
+[
+"Dagger of Venom",
+"item"
+],
+[
+"Damage",
+"term"
+],
+[
+"Damage Roll",
+"term"
+],
+[
+"Damage Threshold",
+"term"
+],
+[
+"Damage Types",
+"term"
+],
+[
+"Dancing Lights",
+"spell"
+],
+[
+"Darkmantle",
+"creature"
+],
+[
+"Darkness",
+"spell"
+],
+[
+"Darkvision",
+"spell"
+],
+[
+"Dart",
+"item"
+],
+[
+"Dash",
+"term"
+],
+[
+"Daylight",
+"spell"
+],
+[
+"Dead",
+"term"
+],
+[
+"Deafened",
+"term"
+],
+[
+"Death Dog",
+"creature"
+],
+[
+"Death Saving Throw",
+"term"
+],
+[
+"Death Ward",
+"spell"
+],
+[
+"Decanter of Endless Water",
+"item"
+],
+[
+"Deception",
+"term"
+],
+[
+"Deck of Illusions",
+"item"
+],
+[
+"Deck of Many Things",
+"item"
+],
+[
+"Deep Gnome",
+"creature"
+],
+[
+"Deep Speech",
+"term"
+],
+[
+"Deer",
+"creature"
+],
+[
+"Defense",
+"term"
+],
+[
+"Delayed Blast Fireball",
+"spell"
+],
+[
+"Demeter",
+"npc"
+],
+[
+"Demiplane",
+"spell"
+],
+[
+"Demon Armor",
+"item"
+],
+[
+"Detect Evil and Good",
+"spell"
+],
+[
+"Detect Magic",
+"spell"
+],
+[
+"Detect Poison and Disease",
+"spell"
+],
+[
+"Detect Thoughts",
+"spell"
+],
+[
+"Deva",
+"creature"
+],
+[
+"Diancecht",
+"npc"
+],
+[
+"Dice Set",
+"item"
+],
+[
+"Difficult Terrain",
+"term"
+],
+[
+"Difficulty Class",
+"term"
+],
+[
+"Dim Light",
+"term"
+],
+[
+"Dimension Door",
+"spell"
+],
+[
+"Dimensional Shackles",
+"item"
+],
+[
+"Dionysus",
+"npc"
+],
+[
+"Diplomat's Pack",
+"item"
+],
+[
+"Dire Wolf",
+"creature"
+],
+[
+"Disadvantage",
+"term"
+],
+[
+"Disengage",
+"term"
+],
+[
+"Disguise Kit",
+"item"
+],
+[
+"Disguise Self",
+"spell"
+],
+[
+"Disintegrate",
+"spell"
+],
+[
+"Dispel Evil and Good",
+"spell"
+],
+[
+"Dispel Magic",
+"spell"
+],
+[
+"Dissonant Whispers",
+"spell"
+],
+[
+"Divination",
+"spell"
+],
+[
+"Divine Favor",
+"spell"
+],
+[
+"Divine Smite",
+"spell"
+],
+[
+"Divine Word",
+"spell"
+],
+[
+"Djinni",
+"creature"
+],
+[
+"Dodge",
+"term"
+],
+[
+"Dominate Beast",
+"spell"
+],
+[
+"Dominate Monster",
+"spell"
+],
+[
+"Dominate Person",
+"spell"
+],
+[
+"Don or Doff a Shield",
+"term"
+],
+[
+"Donkey",
+"item"
+],
+[
+"Doppelganger",
+"creature"
+],
+[
+"Draconic",
+"term"
+],
+[
+"Draconic Bloodline",
+"term"
+],
+[
+"Draconic Sorcery",
+"term"
+],
+[
+"Draconic Spirit",
+"creature"
+],
+[
+"Draft Horse",
+"creature"
+],
+[
+"Dragon Orb",
+"item"
+],
+[
+"Dragon Turtle",
+"creature"
+],
+[
+"Dragon's Breath",
+"spell"
+],
+[
+"Dragonborn",
+"term"
+],
+[
+"Dream",
+"spell"
+],
+[
+"Dretch",
+"creature"
+],
+[
+"Drider",
+"creature"
+],
+[
+"Drow",
+"creature"
+],
+[
+"Drow Poison",
+"item"
+],
+[
+"Druid",
+"creature"
+],
+[
+"Druidcraft",
+"spell"
+],
+[
+"Druidic",
+"term"
+],
+[
+"Drum",
+"item"
+],
+[
+"Dryad",
+"creature"
+],
+[
+"Duergar",
+"creature"
+],
+[
+"Dulcimer",
+"item"
+],
+[
+"Dunatis",
+"npc"
+],
+[
+"Dungeoneer's Pack",
+"item"
+],
+[
+"Dust Mephit",
+"creature"
+],
+[
+"Dust of Disappearance",
+"item"
+],
+[
+"Dust of Dryness",
+"item"
+],
+[
+"Dust of Sneezing and Choking",
+"item"
+],
+[
+"Dwarf",
+"term"
+],
+[
+"Dwarven Plate",
+"item"
+],
+[
+"Dwarven Thrower",
+"item"
+],
+[
+"Dwarvish",
+"term"
+],
+[
+"Eagle",
+"creature"
+],
+[
+"Earth",
+"item"
+],
+[
+"Earth Elemental",
+"creature"
+],
+[
+"Earthquake",
+"spell"
+],
+[
+"Efficient Quiver",
+"item"
+],
+[
+"Efreeti",
+"creature"
+],
+[
+"Efreeti Bottle",
+"item"
+],
+[
+"Eldritch Blast",
+"spell"
+],
+[
+"Elemental Gem, Blue Sapphire",
+"item"
+],
+[
+"Elemental Gem, Emerald",
+"item"
+],
+[
+"Elemental Gem, Red Corundum",
+"item"
+],
+[
+"Elemental Gem, Yellow Diamond",
+"item"
+],
+[
+"Elementalism",
+"spell"
+],
+[
+"Elephant",
+"creature"
+],
+[
+"Elf",
+"term"
+],
+[
+"Elixir of Health",
+"item"
+],
+[
+"Elk",
+"creature"
+],
+[
+"Elven Chain",
+"item"
+],
+[
+"Elvish",
+"term"
+],
+[
+"Emanation [Area of Effect]",
+"term"
+],
+[
+"Emblem",
+"item"
+],
+[
+"Encounter",
+"term"
+],
+[
+"End Concentration",
+"term"
+],
+[
+"Enemy",
+"term"
+],
+[
+"Enhance Ability",
+"spell"
+],
+[
+"Enlarge/Reduce",
+"spell"
+],
+[
+"Ensnaring Strike",
+"spell"
+],
+[
+"Entangle",
+"spell"
+],
+[
+"Entertainer's Pack",
+"item"
+],
+[
+"Enthrall",
+"spell"
+],
+[
+"Erinyes",
+"creature"
+],
+[
+"Escape a Grapple",
+"term"
+],
+[
+"Essence of Ether",
+"item"
+],
+[
+"Etherealness",
+"spell"
+],
+[
+"Ettercap",
+"creature"
+],
+[
+"Ettin",
+"creature"
+],
+[
+"Eversmoking Bottle",
+"item"
+],
+[
+"Evoker",
+"term"
+],
+[
+"Exhaustion",
+"term"
+],
+[
+"Exotic Saddle",
+"item"
+],
+[
+"Expeditious Retreat",
+"spell"
+],
+[
+"Experience Points",
+"term"
+],
+[
+"Expertise",
+"term"
+],
+[
+"Explorer's Pack",
+"item"
+],
+[
+"Eyebite",
+"spell"
+],
+[
+"Eyes of Charming",
+"item"
+],
+[
+"Eyes of Minute Seeing",
+"item"
+],
+[
+"Eyes of the Eagle",
+"item"
+],
+[
+"Fabricate",
+"spell"
+],
+[
+"Faerie Fire",
+"spell"
+],
+[
+"Faithful Hound",
+"spell"
+],
+[
+"False Life",
+"spell"
+],
+[
+"Fear",
+"spell"
+],
+[
+"Feather Fall",
+"spell"
+],
+[
+"Feather Token, Anchor",
+"item"
+],
+[
+"Feather Token, Bird",
+"item"
+],
+[
+"Feather Token, Fan",
+"item"
+],
+[
+"Feather Token, Swan Boat",
+"item"
+],
+[
+"Feather Token, Tree",
+"item"
+],
+[
+"Feather Token, Whip",
+"item"
+],
+[
+"Feeblemind",
+"spell"
+],
+[
+"Feed",
+"item"
+],
+[
+"Fiend Patron",
+"term"
+],
+[
+"Fighter",
+"term"
+],
+[
+"Figurine of Wondrous Power, Bronze Griffon",
+"item"
+],
+[
+"Figurine of Wondrous Power, Ebony Fly",
+"item"
+],
+[
+"Figurine of Wondrous Power, Golden Lions",
+"item"
+],
+[
+"Figurine of Wondrous Power, Ivory Goats",
+"item"
+],
+[
+"Figurine of Wondrous Power, Marble Elephant",
+"item"
+],
+[
+"Figurine of Wondrous Power, Obsidian Steed",
+"item"
+],
+[
+"Figurine of Wondrous Power, Onyx Dog",
+"item"
+],
+[
+"Figurine of Wondrous Power, Serpentine Owl",
+"item"
+],
+[
+"Figurine of Wondrous Power, Silver Raven",
+"item"
+],
+[
+"Find Familiar",
+"spell"
+],
+[
+"Find Steed",
+"spell"
+],
+[
+"Find Traps",
+"spell"
+],
+[
+"Find the Path",
+"spell"
+],
+[
+"Fine Clothes",
+"item"
+],
+[
+"Fine Wine",
+"item"
+],
+[
+"Finger of Death",
+"spell"
+],
+[
+"Fire",
+"item"
+],
+[
+"Fire Bolt",
+"spell"
+],
+[
+"Fire Elemental",
+"creature"
+],
+[
+"Fire Giant",
+"creature"
+],
+[
+"Fire Shield",
+"spell"
+],
+[
+"Fire Storm",
+"spell"
+],
+[
+"Fireball",
+"spell"
+],
+[
+"Fishing Tackle",
+"item"
+],
+[
+"Flail",
+"item"
+],
+[
+"Flame Blade",
+"spell"
+],
+[
+"Flame Strike",
+"spell"
+],
+[
+"Flaming Sphere",
+"spell"
+],
+[
+"Flesh Golem",
+"creature"
+],
+[
+"Flesh to Stone",
+"spell"
+],
+[
+"Floating Disk",
+"spell"
+],
+[
+"Flour",
+"item"
+],
+[
+"Flute",
+"item"
+],
+[
+"Fly",
+"spell"
+],
+[
+"Fly Speed",
+"term"
+],
+[
+"Flying",
+"term"
+],
+[
+"Flying Snake",
+"creature"
+],
+[
+"Flying Sword",
+"creature"
+],
+[
+"Fog Cloud",
+"spell"
+],
+[
+"Folding Boat",
+"item"
+],
+[
+"Forbiddance",
+"spell"
+],
+[
+"Forcecage",
+"spell"
+],
+[
+"Foresight",
+"spell"
+],
+[
+"Forgery Kit",
+"item"
+],
+[
+"Freedom of Movement",
+"spell"
+],
+[
+"Freezing Sphere",
+"spell"
+],
+[
+"Friendly [Attitude]",
+"term"
+],
+[
+"Frightened",
+"term"
+],
+[
+"Frog",
+"creature"
+],
+[
+"Frost Giant",
+"creature"
+],
+[
+"Galley",
+"item"
+],
+[
+"Gargoyle",
+"creature"
+],
+[
+"Gaseous Form",
+"spell"
+],
+[
+"Gate",
+"spell"
+],
+[
+"Gauntlets of Ogre Power",
+"item"
+],
+[
+"Geas",
+"spell"
+],
+[
+"Gelatinous Cube",
+"creature"
+],
+[
+"Gem of Brightness",
+"item"
+],
+[
+"Gem of Seeing",
+"item"
+],
+[
+"Gentle Repose",
+"spell"
+],
+[
+"Ghast",
+"creature"
+],
+[
+"Ghost",
+"creature"
+],
+[
+"Ghoul",
+"creature"
+],
+[
+"Giant",
+"term"
+],
+[
+"Giant Ape",
+"creature"
+],
+[
+"Giant Badger",
+"creature"
+],
+[
+"Giant Bat",
+"creature"
+],
+[
+"Giant Boar",
+"creature"
+],
+[
+"Giant Centipede",
+"creature"
+],
+[
+"Giant Constrictor Snake",
+"creature"
+],
+[
+"Giant Crab",
+"creature"
+],
+[
+"Giant Crocodile",
+"creature"
+],
+[
+"Giant Eagle",
+"creature"
+],
+[
+"Giant Elk",
+"creature"
+],
+[
+"Giant Fire Beetle",
+"creature"
+],
+[
+"Giant Frog",
+"creature"
+],
+[
+"Giant Goat",
+"creature"
+],
+[
+"Giant Hyena",
+"creature"
+],
+[
+"Giant Insect",
+"spell"
+],
+[
+"Giant Lizard",
+"creature"
+],
+[
+"Giant Octopus",
+"creature"
+],
+[
+"Giant Owl",
+"creature"
+],
+[
+"Giant Poisonous Snake",
+"creature"
+],
+[
+"Giant Rat",
+"creature"
+],
+[
+"Giant Scorpion",
+"creature"
+],
+[
+"Giant Sea Horse",
+"creature"
+],
+[
+"Giant Seahorse",
+"creature"
+],
+[
+"Giant Shark",
+"creature"
+],
+[
+"Giant Spider",
+"creature"
+],
+[
+"Giant Toad",
+"creature"
+],
+[
+"Giant Venomous Snake",
+"creature"
+],
+[
+"Giant Vulture",
+"creature"
+],
+[
+"Giant Wasp",
+"creature"
+],
+[
+"Giant Weasel",
+"creature"
+],
+[
+"Giant Wolf Spider",
+"creature"
+],
+[
+"Gibbering Mouther",
+"creature"
+],
+[
+"Ginger",
+"item"
+],
+[
+"Glabrezu",
+"creature"
+],
+[
+"Gladiator",
+"creature"
+],
+[
+"Glaive",
+"item"
+],
+[
+"Glamoured Studded Leather",
+"item"
+],
+[
+"Glass Bottle",
+"item"
+],
+[
+"Glassblower's Tools",
+"item"
+],
+[
+"Glibness",
+"spell"
+],
+[
+"Globe of Invulnerability",
+"spell"
+],
+[
+"Gloves of Missile Snaring",
+"item"
+],
+[
+"Gloves of Swimming and Climbing",
+"item"
+],
+[
+"Gloves of Thievery",
+"item"
+],
+[
+"Glyph of Warding",
+"spell"
+],
+[
+"Gnoll",
+"creature"
+],
+[
+"Gnoll Warrior",
+"creature"
+],
+[
+"Gnome",
+"term"
+],
+[
+"Gnomish",
+"term"
+],
+[
+"Goat",
+"creature"
+],
+[
+"Goblin",
+"creature"
+],
+[
+"Goblin Boss",
+"creature"
+],
+[
+"Goblin Minion",
+"creature"
+],
+[
+"Goblin Warrior",
+"creature"
+],
+[
+"Goggles of Night",
+"item"
+],
+[
+"Goibhniu",
+"npc"
+],
+[
+"Gold",
+"item"
+],
+[
+"Gold Dragon Scale Mail",
+"item"
+],
+[
+"Gold Dragon Wyrmling",
+"creature"
+],
+[
+"Goliath",
+"term"
+],
+[
+"Goodberry",
+"spell"
+],
+[
+"Gorgon",
+"creature"
+],
+[
+"Grapple",
+"term"
+],
+[
+"Grappled",
+"term"
+],
+[
+"Grappler",
+"term"
+],
+[
+"Grappling",
+"term"
+],
+[
+"Grappling Hook",
+"item"
+],
+[
+"Gray Ooze",
+"creature"
+],
+[
+"Grease",
+"spell"
+],
+[
+"Great Weapon Fighting",
+"term"
+],
+[
+"Greataxe",
+"item"
+],
+[
+"Greatclub",
+"item"
+],
+[
+"Greater Invisibility",
+"spell"
+],
+[
+"Greater Restoration",
+"spell"
+],
+[
+"Greatsword",
+"item"
+],
+[
+"Green Dragon Scale Mail",
+"item"
+],
+[
+"Green Dragon Wyrmling",
+"creature"
+],
+[
+"Green Hag",
+"creature"
+],
+[
+"Grick",
+"creature"
+],
+[
+"Griffon",
+"creature"
+],
+[
+"Grimlock",
+"creature"
+],
+[
+"Guard",
+"creature"
+],
+[
+"Guard Captain",
+"creature"
+],
+[
+"Guardian Naga",
+"creature"
+],
+[
+"Guardian of Faith",
+"spell"
+],
+[
+"Guards and Wards",
+"spell"
+],
+[
+"Guidance",
+"spell"
+],
+[
+"Guiding Bolt",
+"spell"
+],
+[
+"Gust of Wind",
+"spell"
+],
+[
+"Gynosphinx",
+"creature"
+],
+[
+"Hades",
+"npc"
+],
+[
+"Halberd",
+"item"
+],
+[
+"Half Plate Armor",
+"item"
+],
+[
+"Half-Dragon",
+"creature"
+],
+[
+"Half-Elf",
+"term"
+],
+[
+"Half-Orc",
+"term"
+],
+[
+"Half-Red Dragon Veteran",
+"creature"
+],
+[
+"Halfling",
+"term"
+],
+[
+"Hallow",
+"spell"
+],
+[
+"Hallucinatory Terrain",
+"spell"
+],
+[
+"Hammer",
+"item"
+],
+[
+"Hammer of Thunderbolts",
+"item"
+],
+[
+"Hand Crossbow",
+"item"
+],
+[
+"Handaxe",
+"item"
+],
+[
+"Handy Haversack",
+"item"
+],
+[
+"Harm",
+"spell"
+],
+[
+"Harpy",
+"creature"
+],
+[
+"Haste",
+"spell"
+],
+[
+"Hat of Disguise",
+"item"
+],
+[
+"Hat of Many Spells",
+"item"
+],
+[
+"Hathor",
+"npc"
+],
+[
+"Hawk",
+"creature"
+],
+[
+"Hazard",
+"term"
+],
+[
+"Headband of Intellect",
+"item"
+],
+[
+"Heal",
+"spell"
+],
+[
+"Healer's Kit",
+"item"
+],
+[
+"Healing",
+"term"
+],
+[
+"Healing Word",
+"spell"
+],
+[
+"Heat Metal",
+"spell"
+],
+[
+"Heavily Obscured",
+"term"
+],
+[
+"Heavy Crossbow",
+"item"
+],
+[
+"Hecate",
+"npc"
+],
+[
+"Hell Hound",
+"creature"
+],
+[
+"Hellish Rebuke",
+"spell"
+],
+[
+"Helm of Brilliance",
+"item"
+],
+[
+"Helm of Comprehending Languages",
+"item"
+],
+[
+"Helm of Telepathy",
+"item"
+],
+[
+"Helm of Teleportation",
+"item"
+],
+[
+"Help",
+"term"
+],
+[
+"Hempen Rope",
+"item"
+],
+[
+"Hephaestus",
+"npc"
+],
+[
+"Hera",
+"npc"
+],
+[
+"Herbalism Kit",
+"item"
+],
+[
+"Hercules",
+"npc"
+],
+[
+"Hermes",
+"npc"
+],
+[
+"Heroes' Feast",
+"spell"
+],
+[
+"Heroic Inspiration",
+"term"
+],
+[
+"Heroism",
+"spell"
+],
+[
+"Hestia",
+"npc"
+],
+[
+"Hex",
+"spell"
+],
+[
+"Hezrou",
+"creature"
+],
+[
+"Hide",
+"term"
+],
+[
+"Hide Armor",
+"item"
+],
+[
+"Hideous Laughter",
+"spell"
+],
+[
+"High",
+"term"
+],
+[
+"High Jump",
+"term"
+],
+[
+"Hill",
+"term"
+],
+[
+"Hill Giant",
+"creature"
+],
+[
+"Hippogriff",
+"creature"
+],
+[
+"Hippopotamus",
+"creature"
+],
+[
+"History",
+"term"
+],
+[
+"Hit Point Dice",
+"term"
+],
+[
+"Hit Points",
+"term"
+],
+[
+"Hobgoblin",
+"creature"
+],
+[
+"Hobgoblin Captain",
+"creature"
+],
+[
+"Hobgoblin Warrior",
+"creature"
+],
+[
+"Hold Monster",
+"spell"
+],
+[
+"Hold Person",
+"spell"
+],
+[
+"Holy Aura",
+"spell"
+],
+[
+"Holy Water",
+"item"
+],
+[
+"Homunculus",
+"creature"
+],
+[
+"Hooded Lantern",
+"item"
+],
+[
+"Horn",
+"item"
+],
+[
+"Horn of Blasting",
+"item"
+],
+[
+"Horn of Valhalla, Brass",
+"item"
+],
+[
+"Horn of Valhalla, Bronze",
+"item"
+],
+[
+"Horn of Valhalla, Iron",
+"item"
+],
+[
+"Horn of Valhalla, Silver",
+"item"
+],
+[
+"Horned Devil",
+"creature"
+],
+[
+"Horseshoes of Speed",
+"item"
+],
+[
+"Horseshoes of a Zephyr",
+"item"
+],
+[
+"Hostile [Attitude]",
+"term"
+],
+[
+"Hourglass",
+"item"
+],
+[
+"Hover",
+"term"
+],
+[
+"Human",
+"term"
+],
+[
+"Hunk of Cheese",
+"item"
+],
+[
+"Hunter",
+"term"
+],
+[
+"Hunter Shark",
+"creature"
+],
+[
+"Hunter's Mark",
+"spell"
+],
+[
+"Hunting Trap",
+"item"
+],
+[
+"Hydra",
+"creature"
+],
+[
+"Hyena",
+"creature"
+],
+[
+"Hypnotic Pattern",
+"spell"
+],
+[
+"Ice Devil",
+"creature"
+],
+[
+"Ice Knife",
+"spell"
+],
+[
+"Ice Mephit",
+"creature"
+],
+[
+"Ice Storm",
+"spell"
+],
+[
+"Identify",
+"spell"
+],
+[
+"Illusions",
+"term"
+],
+[
+"Illusory Script",
+"spell"
+],
+[
+"Imhotep",
+"npc"
+],
+[
+"Immovable Rod",
+"item"
+],
+[
+"Immunity",
+"term"
+],
+[
+"Imp",
+"creature"
+],
+[
+"Imprisonment",
+"spell"
+],
+[
+"Improvised Weapons",
+"term"
+],
+[
+"Incapacitated",
+"term"
+],
+[
+"Incendiary Cloud",
+"spell"
+],
+[
+"Incubus",
+"creature"
+],
+[
+"Indifferent [Attitude]",
+"term"
+],
+[
+"Infernal",
+"term"
+],
+[
+"Inflict Wounds",
+"spell"
+],
+[
+"Initiative",
+"term"
+],
+[
+"Ink",
+"item"
+],
+[
+"Ink Pen",
+"item"
+],
+[
+"Insect Plague",
+"spell"
+],
+[
+"Insight",
+"term"
+],
+[
+"Instant Fortress",
+"item"
+],
+[
+"Instant Summons",
+"spell"
+],
+[
+"Intimidation",
+"term"
+],
+[
+"Investigation",
+"term"
+],
+[
+"Invisibility",
+"spell"
+],
+[
+"Invisible",
+"term"
+],
+[
+"Invisible Stalker",
+"creature"
+],
+[
+"Ioun Stone, Absorption",
+"item"
+],
+[
+"Ioun Stone, Agility",
+"item"
+],
+[
+"Ioun Stone, Awareness",
+"item"
+],
+[
+"Ioun Stone, Fortitude",
+"item"
+],
+[
+"Ioun Stone, Greater Absorption",
+"item"
+],
+[
+"Ioun Stone, Insight",
+"item"
+],
+[
+"Ioun Stone, Intellect",
+"item"
+],
+[
+"Ioun Stone, Leadership",
+"item"
+],
+[
+"Ioun Stone, Mastery",
+"item"
+],
+[
+"Ioun Stone, Protection",
+"item"
+],
+[
+"Ioun Stone, Regeneration",
+"item"
+],
+[
+"Ioun Stone, Reserve",
+"item"
+],
+[
+"Ioun Stone, Strength",
+"item"
+],
+[
+"Ioun Stone, Sustenance",
+"item"
+],
+[
+"Iron",
+"item"
+],
+[
+"Iron Bands of Binding",
+"item"
+],
+[
+"Iron Flask",
+"item"
+],
+[
+"Iron Golem",
+"creature"
+],
+[
+"Iron Pot",
+"item"
+],
+[
+"Iron Spike",
+"item"
+],
+[
+"Iron Spikes",
+"item"
+],
+[
+"Irresistible Dance",
+"spell"
+],
+[
+"Isis",
+"npc"
+],
+[
+"Jackal",
+"creature"
+],
+[
+"Javelin",
+"item"
+],
+[
+"Javelin of Lightning",
+"item"
+],
+[
+"Jeweler's Tools",
+"item"
+],
+[
+"Jug",
+"item"
+],
+[
+"Jump",
+"spell"
+],
+[
+"Jumping",
+"term"
+],
+[
+"Keelboat",
+"item"
+],
+[
+"Killer Whale",
+"creature"
+],
+[
+"Knight",
+"creature"
+],
+[
+"Knock",
+"spell"
+],
+[
+"Knocking Out a Creature",
+"term"
+],
+[
+"Kobold",
+"creature"
+],
+[
+"Kobold Warrior",
+"creature"
+],
+[
+"Kraken",
+"creature"
+],
+[
+"Ladder",
+"item"
+],
+[
+"Lamia",
+"creature"
+],
+[
+"Lamp",
+"item"
+],
+[
+"Lance",
+"item"
+],
+[
+"Lantern of Revealing",
+"item"
+],
+[
+"Leather Armor",
+"item"
+],
+[
+"Leatherworker's Tools",
+"item"
+],
+[
+"Legend Lore",
+"spell"
+],
+[
+"Lemure",
+"creature"
+],
+[
+"Lesser Restoration",
+"spell"
+],
+[
+"Levitate",
+"spell"
+],
+[
+"Lich",
+"creature"
+],
+[
+"Life Domain",
+"term"
+],
+[
+"Light",
+"spell"
+],
+[
+"Light Crossbow",
+"item"
+],
+[
+"Light Hammer",
+"item"
+],
+[
+"Lightfoot",
+"term"
+],
+[
+"Lightly Obscured",
+"term"
+],
+[
+"Lightning Bolt",
+"spell"
+],
+[
+"Line [Area of Effect]",
+"term"
+],
+[
+"Linen",
+"item"
+],
+[
+"Lion",
+"creature"
+],
+[
+"Lizard",
+"creature"
+],
+[
+"Lizardfolk",
+"creature"
+],
+[
+"Loaf of Bread",
+"item"
+],
+[
+"Locate Animals or Plants",
+"spell"
+],
+[
+"Locate Creature",
+"spell"
+],
+[
+"Locate Object",
+"spell"
+],
+[
+"Lock",
+"item"
+],
+[
+"Long Jump",
+"term"
+],
+[
+"Long Rest",
+"term"
+],
+[
+"Longbow",
+"item"
+],
+[
+"Longship",
+"item"
+],
+[
+"Longstrider",
+"spell"
+],
+[
+"Longsword",
+"item"
+],
+[
+"Lugh",
+"npc"
+],
+[
+"Lute",
+"item"
+],
+[
+"Lyre",
+"item"
+],
+[
+"Mace",
+"item"
+],
+[
+"Mace of Disruption",
+"item"
+],
+[
+"Mace of Smiting",
+"item"
+],
+[
+"Mace of Terror",
+"item"
+],
+[
+"Madness",
+"term"
+],
+[
+"Mage",
+"creature"
+],
+[
+"Mage Armor",
+"spell"
+],
+[
+"Mage Hand",
+"spell"
+],
+[
+"Magic",
+"term"
+],
+[
+"Magic Circle",
+"spell"
+],
+[
+"Magic Initiate",
+"term"
+],
+[
+"Magic Jar",
+"spell"
+],
+[
+"Magic Missile",
+"spell"
+],
+[
+"Magic Mouth",
+"spell"
+],
+[
+"Magic Weapon",
+"spell"
+],
+[
+"Magical Effect",
+"term"
+],
+[
+"Magma Mephit",
+"creature"
+],
+[
+"Magmin",
+"creature"
+],
+[
+"Magnificent Mansion",
+"spell"
+],
+[
+"Magnifying Glass",
+"item"
+],
+[
+"Major Image",
+"spell"
+],
+[
+"Malice",
+"item"
+],
+[
+"Mammoth",
+"creature"
+],
+[
+"Manacles",
+"item"
+],
+[
+"Manannan mac Lir",
+"npc"
+],
+[
+"Manticore",
+"creature"
+],
+[
+"Mantle of Spell Resistance",
+"item"
+],
+[
+"Manual of Bodily Health",
+"item"
+],
+[
+"Manual of Clay Golems",
+"item"
+],
+[
+"Manual of Flesh Golems",
+"item"
+],
+[
+"Manual of Gainful Exercise",
+"item"
+],
+[
+"Manual of Iron Golems",
+"item"
+],
+[
+"Manual of Quickness of Action",
+"item"
+],
+[
+"Manual of Stone Golems",
+"item"
+],
+[
+"Map or Scroll Case",
+"item"
+],
+[
+"Marilith",
+"creature"
+],
+[
+"Marvelous Pigments",
+"item"
+],
+[
+"Mason's Tools",
+"item"
+],
+[
+"Mass Cure Wounds",
+"spell"
+],
+[
+"Mass Heal",
+"spell"
+],
+[
+"Mass Healing Word",
+"spell"
+],
+[
+"Mass Suggestion",
+"spell"
+],
+[
+"Mastiff",
+"creature"
+],
+[
+"Math Mathonwy",
+"npc"
+],
+[
+"Maul",
+"item"
+],
+[
+"Maze",
+"spell"
+],
+[
+"Medallion of Thoughts",
+"item"
+],
+[
+"Medicine",
+"term"
+],
+[
+"Medusa",
+"creature"
+],
+[
+"Meld into Stone",
+"spell"
+],
+[
+"Mending",
+"spell"
+],
+[
+"Merchant's Scale",
+"item"
+],
+[
+"Merfolk",
+"creature"
+],
+[
+"Merfolk Skirmisher",
+"creature"
+],
+[
+"Merrow",
+"creature"
+],
+[
+"Mess Kit",
+"item"
+],
+[
+"Message",
+"spell"
+],
+[
+"Meteor Swarm",
+"spell"
+],
+[
+"Midnight Tears",
+"item"
+],
+[
+"Military Saddle",
+"item"
+],
+[
+"Mimic",
+"creature"
+],
+[
+"Mind Blank",
+"spell"
+],
+[
+"Mind Spike",
+"spell"
+],
+[
+"Miner's Pick",
+"item"
+],
+[
+"Minor Illusion",
+"spell"
+],
+[
+"Minotaur",
+"creature"
+],
+[
+"Minotaur Skeleton",
+"creature"
+],
+[
+"Minotaur of Baphomet",
+"creature"
+],
+[
+"Mirage Arcane",
+"spell"
+],
+[
+"Mirror",
+"item"
+],
+[
+"Mirror Image",
+"spell"
+],
+[
+"Mirror of Life Trapping",
+"item"
+],
+[
+"Mislead",
+"spell"
+],
+[
+"Misty Step",
+"spell"
+],
+[
+"Modify Memory",
+"spell"
+],
+[
+"Monk",
+"term"
+],
+[
+"Monster",
+"term"
+],
+[
+"Moonbeam",
+"spell"
+],
+[
+"Morningstar",
+"item"
+],
+[
+"Morrigan",
+"npc"
+],
+[
+"Move Earth",
+"spell"
+],
+[
+"Mule",
+"creature"
+],
+[
+"Mummy",
+"creature"
+],
+[
+"Mummy Lord",
+"creature"
+],
+[
+"Musket",
+"item"
+],
+[
+"Mysterious Deck",
+"item"
+],
+[
+"Nalfeshnee",
+"creature"
+],
+[
+"Nature",
+"term"
+],
+[
+"Navigator's Tools",
+"item"
+],
+[
+"Necklace of Adaptation",
+"item"
+],
+[
+"Necklace of Fireballs",
+"item"
+],
+[
+"Necklace of Prayer Beads",
+"item"
+],
+[
+"Needle",
+"item"
+],
+[
+"Needles",
+"item"
+],
+[
+"Nephthys",
+"npc"
+],
+[
+"Net",
+"item"
+],
+[
+"Night Hag",
+"creature"
+],
+[
+"Nightmare",
+"creature"
+],
+[
+"Nike",
+"npc"
+],
+[
+"Noble",
+"creature"
+],
+[
+"Nondetection",
+"spell"
+],
+[
+"Nonplayer Character",
+"term"
+],
+[
+"Nuada",
+"npc"
+],
+[
+"Oath of Devotion",
+"term"
+],
+[
+"Oathbow",
+"item"
+],
+[
+"Object",
+"term"
+],
+[
+"Occupied Space",
+"term"
+],
+[
+"Ochre Jelly",
+"creature"
+],
+[
+"Octopus",
+"creature"
+],
+[
+"Oghma",
+"npc"
+],
+[
+"Ogre",
+"creature"
+],
+[
+"Ogre Zombie",
+"creature"
+],
+[
+"Oil",
+"item"
+],
+[
+"Oil of Etherealness",
+"item"
+],
+[
+"Oil of Sharpness",
+"item"
+],
+[
+"Oil of Slipperiness",
+"item"
+],
+[
+"Oil of Taggit",
+"item"
+],
+[
+"Oni",
+"creature"
+],
+[
+"Opportunity Attack",
+"term"
+],
+[
+"Orb",
+"item"
+],
+[
+"Orb of Dragonkind",
+"item"
+],
+[
+"Orc",
+"creature"
+],
+[
+"Osiris",
+"npc"
+],
+[
+"Other Activity",
+"term"
+],
+[
+"Otherworldly Steed",
+"creature"
+],
+[
+"Otyugh",
+"creature"
+],
+[
+"Owl",
+"creature"
+],
+[
+"Owlbear",
+"creature"
+],
+[
+"Ox",
+"item"
+],
+[
+"Pack Saddle",
+"item"
+],
+[
+"Padded Armor",
+"item"
+],
+[
+"Painter's Supplies",
+"item"
+],
+[
+"Paladin",
+"term"
+],
+[
+"Pale Tincture",
+"item"
+],
+[
+"Pan",
+"npc"
+],
+[
+"Pan Flute",
+"item"
+],
+[
+"Panther",
+"creature"
+],
+[
+"Paper",
+"item"
+],
+[
+"Paralyzed",
+"term"
+],
+[
+"Parchment",
+"item"
+],
+[
+"Pass without Trace",
+"spell"
+],
+[
+"Passive Perception",
+"term"
+],
+[
+"Passwall",
+"spell"
+],
+[
+"Path of the Berserker",
+"term"
+],
+[
+"Pearl of Power",
+"item"
+],
+[
+"Pegasus",
+"creature"
+],
+[
+"Pepper",
+"item"
+],
+[
+"Perception",
+"term"
+],
+[
+"Performance",
+"term"
+],
+[
+"Perfume",
+"item"
+],
+[
+"Periapt of Health",
+"item"
+],
+[
+"Periapt of Proof against Poison",
+"item"
+],
+[
+"Periapt of Wound Closure",
+"item"
+],
+[
+"Persuasion",
+"term"
+],
+[
+"Petrified",
+"term"
+],
+[
+"Phantasmal Force",
+"spell"
+],
+[
+"Phantasmal Killer",
+"spell"
+],
+[
+"Phantom Steed",
+"spell"
+],
+[
+"Phase Spider",
+"creature"
+],
+[
+"Philter of Love",
+"item"
+],
+[
+"Piercing",
+"item"
+],
+[
+"Pig",
+"item"
+],
+[
+"Pike",
+"item"
+],
+[
+"Pipes of Haunting",
+"item"
+],
+[
+"Pipes of the Sewers",
+"item"
+],
+[
+"Piranha",
+"creature"
+],
+[
+"Pirate",
+"creature"
+],
+[
+"Pirate Captain",
+"creature"
+],
+[
+"Pistol",
+"item"
+],
+[
+"Pit Fiend",
+"creature"
+],
+[
+"Piton",
+"item"
+],
+[
+"Planar Ally",
+"spell"
+],
+[
+"Planar Binding",
+"spell"
+],
+[
+"Plane Shift",
+"spell"
+],
+[
+"Planetar",
+"creature"
+],
+[
+"Plant Growth",
+"spell"
+],
+[
+"Plate Armor",
+"item"
+],
+[
+"Plate Armor of Etherealness",
+"item"
+],
+[
+"Platinum",
+"item"
+],
+[
+"Player Character",
+"term"
+],
+[
+"Playing Card Set",
+"item"
+],
+[
+"Playing Cards",
+"item"
+],
+[
+"Plesiosaurus",
+"creature"
+],
+[
+"Poison Spray",
+"spell"
+],
+[
+"Poisoned",
+"term"
+],
+[
+"Poisoner's Kit",
+"item"
+],
+[
+"Poisonous Snake",
+"creature"
+],
+[
+"Polar Bear",
+"creature"
+],
+[
+"Pole",
+"item"
+],
+[
+"Polymorph",
+"spell"
+],
+[
+"Pony",
+"creature"
+],
+[
+"Portable Hole",
+"item"
+],
+[
+"Portable Ram",
+"item"
+],
+[
+"Poseidon",
+"npc"
+],
+[
+"Possession",
+"term"
+],
+[
+"Potion of Acid Resistance",
+"item"
+],
+[
+"Potion of Animal Friendship",
+"item"
+],
+[
+"Potion of Clairvoyance",
+"item"
+],
+[
+"Potion of Climbing",
+"item"
+],
+[
+"Potion of Cloud Giant Strength",
+"item"
+],
+[
+"Potion of Cold Resistance",
+"item"
+],
+[
+"Potion of Diminution",
+"item"
+],
+[
+"Potion of Fire Giant Strength",
+"item"
+],
+[
+"Potion of Fire Resistance",
+"item"
+],
+[
+"Potion of Flying",
+"item"
+],
+[
+"Potion of Force Resistance",
+"item"
+],
+[
+"Potion of Frost Giant Strength",
+"item"
+],
+[
+"Potion of Gaseous Form",
+"item"
+],
+[
+"Potion of Greater Healing",
+"item"
+],
+[
+"Potion of Growth",
+"item"
+],
+[
+"Potion of Healing",
+"item"
+],
+[
+"Potion of Heroism",
+"item"
+],
+[
+"Potion of Hill Giant Strength",
+"item"
+],
+[
+"Potion of Invisibility",
+"item"
+],
+[
+"Potion of Invulnerability",
+"item"
+],
+[
+"Potion of Lightning Resistance",
+"item"
+],
+[
+"Potion of Longevity",
+"item"
+],
+[
+"Potion of Mind Reading",
+"item"
+],
+[
+"Potion of Necrotic Resistance",
+"item"
+],
+[
+"Potion of Poison",
+"item"
+],
+[
+"Potion of Poison Resistance",
+"item"
+],
+[
+"Potion of Psychic Resistance",
+"item"
+],
+[
+"Potion of Radiant Resistance",
+"item"
+],
+[
+"Potion of Speed",
+"item"
+],
+[
+"Potion of Stone Giant Strength",
+"item"
+],
+[
+"Potion of Storm Giant Strength",
+"item"
+],
+[
+"Potion of Superior Healing",
+"item"
+],
+[
+"Potion of Supreme Healing",
+"item"
+],
+[
+"Potion of Thunder Resistance",
+"item"
+],
+[
+"Potion of Vitality",
+"item"
+],
+[
+"Potion of Water Breathing",
+"item"
+],
+[
+"Potter's Tools",
+"item"
+],
+[
+"Pouch",
+"item"
+],
+[
+"Power Word Heal",
+"spell"
+],
+[
+"Power Word Kill",
+"spell"
+],
+[
+"Power Word Stun",
+"spell"
+],
+[
+"Prayer of Healing",
+"spell"
+],
+[
+"Prestidigitation",
+"spell"
+],
+[
+"Priest",
+"creature"
+],
+[
+"Priest Acolyte",
+"creature"
+],
+[
+"Priest's Pack",
+"item"
+],
+[
+"Primordial",
+"term"
+],
+[
+"Prismatic Spray",
+"spell"
+],
+[
+"Prismatic Wall",
+"spell"
+],
+[
+"Private Sanctum",
+"spell"
+],
+[
+"Produce Flame",
+"spell"
+],
+[
+"Proficiency",
+"term"
+],
+[
+"Programmed Illusion",
+"spell"
+],
+[
+"Project Image",
+"spell"
+],
+[
+"Prone",
+"term"
+],
+[
+"Protection from Energy",
+"spell"
+],
+[
+"Protection from Evil and Good",
+"spell"
+],
+[
+"Protection from Poison",
+"spell"
+],
+[
+"Pseudodragon",
+"creature"
+],
+[
+"Ptah",
+"npc"
+],
+[
+"Pteranodon",
+"creature"
+],
+[
+"Purify Food and Drink",
+"spell"
+],
+[
+"Purple Worm",
+"creature"
+],
+[
+"Purple Worm Poison",
+"item"
+],
+[
+"Quarterstaff",
+"item"
+],
+[
+"Quarterstaff of the Acrobat",
+"item"
+],
+[
+"Quasit",
+"creature"
+],
+[
+"Quipper",
+"creature"
+],
+[
+"Quiver",
+"item"
+],
+[
+"Raise Dead",
+"spell"
+],
+[
+"Rakshasa",
+"creature"
+],
+[
+"Ranger",
+"term"
+],
+[
+"Rapier",
+"item"
+],
+[
+"Rat",
+"creature"
+],
+[
+"Rations",
+"item"
+],
+[
+"Raven",
+"creature"
+],
+[
+"Ray of Enfeeblement",
+"spell"
+],
+[
+"Ray of Frost",
+"spell"
+],
+[
+"Ray of Sickness",
+"spell"
+],
+[
+"Re-Horakhty",
+"npc"
+],
+[
+"Reaction",
+"term"
+],
+[
+"Ready",
+"term"
+],
+[
+"Red Dragon Scale Mail",
+"item"
+],
+[
+"Red Dragon Wyrmling",
+"creature"
+],
+[
+"Reef Shark",
+"creature"
+],
+[
+"Regenerate",
+"spell"
+],
+[
+"Reincarnate",
+"spell"
+],
+[
+"Religion",
+"term"
+],
+[
+"Reliquary",
+"item"
+],
+[
+"Remorhaz",
+"creature"
+],
+[
+"Remove Curse",
+"spell"
+],
+[
+"Resilient Sphere",
+"spell"
+],
+[
+"Resistance",
+"spell"
+],
+[
+"Restorative Ointment",
+"item"
+],
+[
+"Restrained",
+"term"
+],
+[
+"Resurrection",
+"spell"
+],
+[
+"Reverse Gravity",
+"spell"
+],
+[
+"Revivify",
+"spell"
+],
+[
+"Rhinoceros",
+"creature"
+],
+[
+"Riding Horse",
+"creature"
+],
+[
+"Riding Saddle",
+"item"
+],
+[
+"Ring Mail",
+"item"
+],
+[
+"Ring of Acid Resistance",
+"item"
+],
+[
+"Ring of Air Elemental Command",
+"item"
+],
+[
+"Ring of Animal Influence",
+"item"
+],
+[
+"Ring of Cold Resistance",
+"item"
+],
+[
+"Ring of Djinni Summoning",
+"item"
+],
+[
+"Ring of Earth Elemental Command",
+"item"
+],
+[
+"Ring of Elemental Command",
+"item"
+],
+[
+"Ring of Evasion",
+"item"
+],
+[
+"Ring of Feather Falling",
+"item"
+],
+[
+"Ring of Fire Elemental Command",
+"item"
+],
+[
+"Ring of Fire Resistance",
+"item"
+],
+[
+"Ring of Force Resistance",
+"item"
+],
+[
+"Ring of Free Action",
+"item"
+],
+[
+"Ring of Invisibility",
+"item"
+],
+[
+"Ring of Jumping",
+"item"
+],
+[
+"Ring of Lightning Resistance",
+"item"
+],
+[
+"Ring of Mind Shielding",
+"item"
+],
+[
+"Ring of Necrotic Resistance",
+"item"
+],
+[
+"Ring of Poison Resistance",
+"item"
+],
+[
+"Ring of Protection",
+"item"
+],
+[
+"Ring of Psychic Resistance",
+"item"
+],
+[
+"Ring of Radiant Resistance",
+"item"
+],
+[
+"Ring of Regeneration",
+"item"
+],
+[
+"Ring of Shooting Stars",
+"item"
+],
+[
+"Ring of Spell Storing",
+"item"
+],
+[
+"Ring of Spell Turning",
+"item"
+],
+[
+"Ring of Swimming",
+"item"
+],
+[
+"Ring of Telekinesis",
+"item"
+],
+[
+"Ring of Three Wishes",
+"item"
+],
+[
+"Ring of Thunder Resistance",
+"item"
+],
+[
+"Ring of Warmth",
+"item"
+],
+[
+"Ring of Water Elemental Command",
+"item"
+],
+[
+"Ring of Water Walking",
+"item"
+],
+[
+"Ring of X-ray Vision",
+"item"
+],
+[
+"Ring of the Ram",
+"item"
+],
+[
+"Ritual",
+"term"
+],
+[
+"Robe",
+"item"
+],
+[
+"Robe of Eyes",
+"item"
+],
+[
+"Robe of Scintillating Colors",
+"item"
+],
+[
+"Robe of Stars",
+"item"
+],
+[
+"Robe of Useful Items",
+"item"
+],
+[
+"Robe of the Archmagi",
+"item"
+],
+[
+"Robes",
+"item"
+],
+[
+"Roc",
+"creature"
+],
+[
+"Rock",
+"term"
+],
+[
+"Rod",
+"item"
+],
+[
+"Rod of Absorption",
+"item"
+],
+[
+"Rod of Alertness",
+"item"
+],
+[
+"Rod of Lordly Might",
+"item"
+],
+[
+"Rod of Resurrection",
+"item"
+],
+[
+"Rod of Rulership",
+"item"
+],
+[
+"Rod of Security",
+"item"
+],
+[
+"Rogue",
+"term"
+],
+[
+"Rope",
+"item"
+],
+[
+"Rope Trick",
+"spell"
+],
+[
+"Rope of Climbing",
+"item"
+],
+[
+"Rope of Entanglement",
+"item"
+],
+[
+"Roper",
+"creature"
+],
+[
+"Round Down",
+"term"
+],
+[
+"Rowboat",
+"item"
+],
+[
+"Rug of Smothering",
+"creature"
+],
+[
+"Rust Monster",
+"creature"
+],
+[
+"Saber-Toothed Tiger",
+"creature"
+],
+[
+"Sack",
+"item"
+],
+[
+"Sacred Flame",
+"spell"
+],
+[
+"Saddlebags",
+"item"
+],
+[
+"Saffron",
+"item"
+],
+[
+"Sahuagin",
+"creature"
+],
+[
+"Sahuagin Warrior",
+"creature"
+],
+[
+"Sailing Ship",
+"item"
+],
+[
+"Salamander",
+"creature"
+],
+[
+"Salt",
+"item"
+],
+[
+"Sanctuary",
+"spell"
+],
+[
+"Satyr",
+"creature"
+],
+[
+"Savage Attacker",
+"term"
+],
+[
+"Save",
+"term"
+],
+[
+"Saving Throw",
+"term"
+],
+[
+"Scale Mail",
+"item"
+],
+[
+"Scarab of Protection",
+"item"
+],
+[
+"Scholar's Pack",
+"item"
+],
+[
+"School of Evocation",
+"term"
+],
+[
+"Scimitar",
+"item"
+],
+[
+"Scimitar of Speed",
+"item"
+],
+[
+"Scorching Ray",
+"spell"
+],
+[
+"Scorpion",
+"creature"
+],
+[
+"Scout",
+"creature"
+],
+[
+"Scrying",
+"spell"
+],
+[
+"Sea Hag",
+"creature"
+],
+[
+"Sea Horse",
+"creature"
+],
+[
+"Seahorse",
+"creature"
+],
+[
+"Sealing Wax",
+"item"
+],
+[
+"Search",
+"term"
+],
+[
+"Searing Smite",
+"spell"
+],
+[
+"Secret Chest",
+"spell"
+],
+[
+"See Invisibility",
+"spell"
+],
+[
+"Seeming",
+"spell"
+],
+[
+"Sending",
+"spell"
+],
+[
+"Sending Stones",
+"item"
+],
+[
+"Sentinel Shield",
+"item"
+],
+[
+"Sequester",
+"spell"
+],
+[
+"Serpent Venom",
+"item"
+],
+[
+"Set",
+"npc"
+],
+[
+"Sewer Plague",
+"term"
+],
+[
+"Shadow",
+"creature"
+],
+[
+"Shambling Mound",
+"creature"
+],
+[
+"Shape-Shifting",
+"term"
+],
+[
+"Shapechange",
+"spell"
+],
+[
+"Shatter",
+"spell"
+],
+[
+"Shawm",
+"item"
+],
+[
+"Sheep",
+"item"
+],
+[
+"Shield",
+"spell"
+],
+[
+"Shield Guardian",
+"creature"
+],
+[
+"Shield of Faith",
+"spell"
+],
+[
+"Shield of Missile Attraction",
+"item"
+],
+[
+"Shield of the Cavalier",
+"item"
+],
+[
+"Shillelagh",
+"spell"
+],
+[
+"Shining Smite",
+"spell"
+],
+[
+"Shocking Grasp",
+"spell"
+],
+[
+"Short Rest",
+"term"
+],
+[
+"Shortbow",
+"item"
+],
+[
+"Shortsword",
+"item"
+],
+[
+"Shove",
+"term"
+],
+[
+"Shovel",
+"item"
+],
+[
+"Shrieker",
+"creature"
+],
+[
+"Shrieker Fungus",
+"creature"
+],
+[
+"Sickle",
+"item"
+],
+[
+"Sight Rot",
+"term"
+],
+[
+"Signal Whistle",
+"item"
+],
+[
+"Signet Ring",
+"item"
+],
+[
+"Silence",
+"spell"
+],
+[
+"Silent Image",
+"spell"
+],
+[
+"Silk",
+"item"
+],
+[
+"Silk Rope",
+"item"
+],
+[
+"Silvanus",
+"npc"
+],
+[
+"Silver",
+"item"
+],
+[
+"Silver Dragon Scale Mail",
+"item"
+],
+[
+"Silver Dragon Wyrmling",
+"creature"
+],
+[
+"Simulacrum",
+"spell"
+],
+[
+"Simultaneous Effects",
+"term"
+],
+[
+"Size",
+"term"
+],
+[
+"Skeleton",
+"creature"
+],
+[
+"Skill",
+"term"
+],
+[
+"Skilled",
+"term"
+],
+[
+"Slashing",
+"item"
+],
+[
+"Sled",
+"item"
+],
+[
+"Sledgehammer",
+"item"
+],
+[
+"Sleep",
+"spell"
+],
+[
+"Sleet Storm",
+"spell"
+],
+[
+"Sleight of Hand",
+"term"
+],
+[
+"Sling",
+"item"
+],
+[
+"Sling Bullet",
+"item"
+],
+[
+"Sling Bullets",
+"item"
+],
+[
+"Slippers of Spider Climbing",
+"item"
+],
+[
+"Slow",
+"spell"
+],
+[
+"Smith's Tools",
+"item"
+],
+[
+"Soap",
+"item"
+],
+[
+"Sobek",
+"npc"
+],
+[
+"Solar",
+"creature"
+],
+[
+"Sorcerer",
+"term"
+],
+[
+"Sorcerous Burst",
+"spell"
+],
+[
+"Sovereign Glue",
+"item"
+],
+[
+"Spare the Dying",
+"spell"
+],
+[
+"Speak with Animals",
+"spell"
+],
+[
+"Speak with Dead",
+"spell"
+],
+[
+"Speak with Plants",
+"spell"
+],
+[
+"Spear",
+"item"
+],
+[
+"Specter",
+"creature"
+],
+[
+"Speed",
+"term"
+],
+[
+"Spell",
+"term"
+],
+[
+"Spell Attack",
+"term"
+],
+[
+"Spell Scroll",
+"item"
+],
+[
+"Spellbook",
+"item"
+],
+[
+"Spellcasting Focus",
+"term"
+],
+[
+"Spellguard Shield",
+"item"
+],
+[
+"Sphere [Area of Effect]",
+"term"
+],
+[
+"Sphere of Annihilation",
+"item"
+],
+[
+"Sphinx of Lore",
+"creature"
+],
+[
+"Sphinx of Valor",
+"creature"
+],
+[
+"Sphinx of Wonder",
+"creature"
+],
+[
+"Spider",
+"creature"
+],
+[
+"Spider Climb",
+"spell"
+],
+[
+"Spike Growth",
+"spell"
+],
+[
+"Spirit Guardians",
+"spell"
+],
+[
+"Spirit Naga",
+"creature"
+],
+[
+"Spiritual Weapon",
+"spell"
+],
+[
+"Splint Armor",
+"item"
+],
+[
+"Sprig of Mistletoe",
+"item"
+],
+[
+"Sprite",
+"creature"
+],
+[
+"Spy",
+"creature"
+],
+[
+"Spyglass",
+"item"
+],
+[
+"Stabilize a Creature",
+"term"
+],
+[
+"Stable",
+"term"
+],
+[
+"Stabling",
+"item"
+],
+[
+"Staff",
+"item"
+],
+[
+"Staff of Charming",
+"item"
+],
+[
+"Staff of Fire",
+"item"
+],
+[
+"Staff of Frost",
+"item"
+],
+[
+"Staff of Healing",
+"item"
+],
+[
+"Staff of Power",
+"item"
+],
+[
+"Staff of Striking",
+"item"
+],
+[
+"Staff of Swarming Insects",
+"item"
+],
+[
+"Staff of Thunder and Lightning",
+"item"
+],
+[
+"Staff of Withering",
+"item"
+],
+[
+"Staff of the Magi",
+"item"
+],
+[
+"Staff of the Python",
+"item"
+],
+[
+"Staff of the Woodlands",
+"item"
+],
+[
+"Starry Wisp",
+"spell"
+],
+[
+"Stat Block",
+"term"
+],
+[
+"Stealth",
+"term"
+],
+[
+"Steam Mephit",
+"creature"
+],
+[
+"Steel Mirror",
+"item"
+],
+[
+"Stinking Cloud",
+"spell"
+],
+[
+"Stirge",
+"creature"
+],
+[
+"Stone Giant",
+"creature"
+],
+[
+"Stone Golem",
+"creature"
+],
+[
+"Stone Shape",
+"spell"
+],
+[
+"Stone of Controlling Earth Elementals",
+"item"
+],
+[
+"Stone of Good Luck",
+"item"
+],
+[
+"Stoneskin",
+"spell"
+],
+[
+"Storm Giant",
+"creature"
+],
+[
+"Storm of Vengeance",
+"spell"
+],
+[
+"Studded Leather Armor",
+"item"
+],
+[
+"Stunned",
+"term"
+],
+[
+"Succubus",
+"creature"
+],
+[
+"Suggestion",
+"spell"
+],
+[
+"Summon Dragon",
+"spell"
+],
+[
+"Sun Blade",
+"item"
+],
+[
+"Sunbeam",
+"spell"
+],
+[
+"Sunburst",
+"spell"
+],
+[
+"Survival",
+"term"
+],
+[
+"Svirfneblin",
+"creature"
+],
+[
+"Swarm of Bats",
+"creature"
+],
+[
+"Swarm of Beetles",
+"creature"
+],
+[
+"Swarm of Centipedes",
+"creature"
+],
+[
+"Swarm of Crawling Claws",
+"creature"
+],
+[
+"Swarm of Insects",
+"creature"
+],
+[
+"Swarm of Piranhas",
+"creature"
+],
+[
+"Swarm of Poisonous Snakes",
+"creature"
+],
+[
+"Swarm of Quippers",
+"creature"
+],
+[
+"Swarm of Rats",
+"creature"
+],
+[
+"Swarm of Ravens",
+"creature"
+],
+[
+"Swarm of Spiders",
+"creature"
+],
+[
+"Swarm of Venomous Snakes",
+"creature"
+],
+[
+"Swarm of Wasps",
+"creature"
+],
+[
+"Swim Speed",
+"term"
+],
+[
+"Swimming",
+"term"
+],
+[
+"Sylvan",
+"term"
+],
+[
+"Symbol",
+"spell"
+],
+[
+"Talisman of Pure Good",
+"item"
+],
+[
+"Talisman of Ultimate Evil",
+"item"
+],
+[
+"Talisman of the Sphere",
+"item"
+],
+[
+"Tankard",
+"item"
+],
+[
+"Target",
+"term"
+],
+[
+"Tarrasque",
+"creature"
+],
+[
+"Telekinesis",
+"spell"
+],
+[
+"Telepathic Bond",
+"spell"
+],
+[
+"Telepathy",
+"term"
+],
+[
+"Teleport",
+"spell"
+],
+[
+"Teleportation",
+"term"
+],
+[
+"Teleportation Circle",
+"spell"
+],
+[
+"Temporary Hit Points",
+"term"
+],
+[
+"Tent",
+"item"
+],
+[
+"Thaumaturgy",
+"spell"
+],
+[
+"The Daghdha",
+"npc"
+],
+[
+"The Fiend",
+"term"
+],
+[
+"Thief",
+"term"
+],
+[
+"Thieves' Cant",
+"term"
+],
+[
+"Thieves' Tools",
+"item"
+],
+[
+"Thoth",
+"npc"
+],
+[
+"Thug",
+"creature"
+],
+[
+"Thunderous Greatclub",
+"item"
+],
+[
+"Thunderwave",
+"spell"
+],
+[
+"Tiefling",
+"term"
+],
+[
+"Tiger",
+"creature"
+],
+[
+"Time Stop",
+"spell"
+],
+[
+"Tinderbox",
+"item"
+],
+[
+"Tinker's Tools",
+"item"
+],
+[
+"Tiny Hut",
+"spell"
+],
+[
+"Tome of Clear Thought",
+"item"
+],
+[
+"Tome of Leadership and Influence",
+"item"
+],
+[
+"Tome of Understanding",
+"item"
+],
+[
+"Tongues",
+"spell"
+],
+[
+"Torch",
+"item"
+],
+[
+"Torpor",
+"item"
+],
+[
+"Totem",
+"item"
+],
+[
+"Tough",
+"creature"
+],
+[
+"Tough Boss",
+"creature"
+],
+[
+"Transport via Plants",
+"spell"
+],
+[
+"Traveler's Clothes",
+"item"
+],
+[
+"Treant",
+"creature"
+],
+[
+"Tree Stride",
+"spell"
+],
+[
+"Tribal Warrior",
+"creature"
+],
+[
+"Triceratops",
+"creature"
+],
+[
+"Trident",
+"item"
+],
+[
+"Trident of Fish Command",
+"item"
+],
+[
+"Troll",
+"creature"
+],
+[
+"Troll Limb",
+"creature"
+],
+[
+"True Polymorph",
+"spell"
+],
+[
+"True Resurrection",
+"spell"
+],
+[
+"True Seeing",
+"spell"
+],
+[
+"True Strike",
+"spell"
+],
+[
+"Truth Serum",
+"item"
+],
+[
+"Tsunami",
+"spell"
+],
+[
+"Two-Person Tent",
+"item"
+],
+[
+"Two-Weapon Fighting",
+"term"
+],
+[
+"Tyche",
+"npc"
+],
+[
+"Tyrannosaurus Rex",
+"creature"
+],
+[
+"Unarmed Strike",
+"term"
+],
+[
+"Unconscious",
+"term"
+],
+[
+"Undercommon",
+"term"
+],
+[
+"Unicorn",
+"creature"
+],
+[
+"Universal Solvent",
+"item"
+],
+[
+"Unoccupied Space",
+"term"
+],
+[
+"Unseen Servant",
+"spell"
+],
+[
+"Use an Object",
+"term"
+],
+[
+"Utilize",
+"term"
+],
+[
+"Vampire",
+"creature"
+],
+[
+"Vampire Familiar",
+"creature"
+],
+[
+"Vampire Spawn",
+"creature"
+],
+[
+"Vampiric Touch",
+"spell"
+],
+[
+"Venomous Snake",
+"creature"
+],
+[
+"Veteran",
+"creature"
+],
+[
+"Vicious Mockery",
+"spell"
+],
+[
+"Viol",
+"item"
+],
+[
+"Violet Fungus",
+"creature"
+],
+[
+"Vitriolic Sphere",
+"spell"
+],
+[
+"Vrock",
+"creature"
+],
+[
+"Vulnerability",
+"term"
+],
+[
+"Vulture",
+"creature"
+],
+[
+"Wagon",
+"item"
+],
+[
+"Wall of Fire",
+"spell"
+],
+[
+"Wall of Force",
+"spell"
+],
+[
+"Wall of Ice",
+"spell"
+],
+[
+"Wall of Stone",
+"spell"
+],
+[
+"Wall of Thorns",
+"spell"
+],
+[
+"Wand",
+"item"
+],
+[
+"Wand of Binding",
+"item"
+],
+[
+"Wand of Enemy Detection",
+"item"
+],
+[
+"Wand of Fear",
+"item"
+],
+[
+"Wand of Fireballs",
+"item"
+],
+[
+"Wand of Lightning Bolts",
+"item"
+],
+[
+"Wand of Magic Detection",
+"item"
+],
+[
+"Wand of Magic Missiles",
+"item"
+],
+[
+"Wand of Paralysis",
+"item"
+],
+[
+"Wand of Polymorph",
+"item"
+],
+[
+"Wand of Secrets",
+"item"
+],
+[
+"Wand of Web",
+"item"
+],
+[
+"Wand of Wonder",
+"item"
+],
+[
+"War Pick",
+"item"
+],
+[
+"Warding Bond",
+"spell"
+],
+[
+"Warhammer",
+"item"
+],
+[
+"Warhorse",
+"creature"
+],
+[
+"Warhorse Skeleton",
+"creature"
+],
+[
+"Warlock",
+"term"
+],
+[
+"Warrior Infantry",
+"creature"
+],
+[
+"Warrior Veteran",
+"creature"
+],
+[
+"Warrior of the Open Hand",
+"term"
+],
+[
+"Warship",
+"item"
+],
+[
+"Water",
+"item"
+],
+[
+"Water Breathing",
+"spell"
+],
+[
+"Water Elemental",
+"creature"
+],
+[
+"Water Walk",
+"spell"
+],
+[
+"Waterskin",
+"item"
+],
+[
+"Way of the Open Hand",
+"term"
+],
+[
+"Weapon",
+"term"
+],
+[
+"Weapon Attack",
+"term"
+],
+[
+"Weasel",
+"creature"
+],
+[
+"Weaver's Tools",
+"item"
+],
+[
+"Web",
+"spell"
+],
+[
+"Weird",
+"spell"
+],
+[
+"Well of Many Worlds",
+"item"
+],
+[
+"Werebear",
+"creature"
+],
+[
+"Wereboar",
+"creature"
+],
+[
+"Wererat",
+"creature"
+],
+[
+"Weretiger",
+"creature"
+],
+[
+"Werewolf",
+"creature"
+],
+[
+"Wheat",
+"item"
+],
+[
+"Whetstone",
+"item"
+],
+[
+"Whip",
+"item"
+],
+[
+"White Dragon Scale Mail",
+"item"
+],
+[
+"White Dragon Wyrmling",
+"creature"
+],
+[
+"Wight",
+"creature"
+],
+[
+"Will-o'-Wisp",
+"creature"
+],
+[
+"Wind Fan",
+"item"
+],
+[
+"Wind Walk",
+"spell"
+],
+[
+"Wind Wall",
+"spell"
+],
+[
+"Winged Boots",
+"item"
+],
+[
+"Wings of Flying",
+"item"
+],
+[
+"Winter Wolf",
+"creature"
+],
+[
+"Wish",
+"spell"
+],
+[
+"Wizard",
+"term"
+],
+[
+"Wolf",
+"creature"
+],
+[
+"Woodcarver's Tools",
+"item"
+],
+[
+"Wooden Staff",
+"item"
+],
+[
+"Word of Recall",
+"spell"
+],
+[
+"Worg",
+"creature"
+],
+[
+"Wraith",
+"creature"
+],
+[
+"Wyvern",
+"creature"
+],
+[
+"Wyvern Poison",
+"item"
+],
+[
+"Xorn",
+"creature"
+],
+[
+"Yew Wand",
+"item"
+],
+[
+"Young Black Dragon",
+"creature"
+],
+[
+"Young Blue Dragon",
+"creature"
+],
+[
+"Young Brass Dragon",
+"creature"
+],
+[
+"Young Bronze Dragon",
+"creature"
+],
+[
+"Young Copper Dragon",
+"creature"
+],
+[
+"Young Gold Dragon",
+"creature"
+],
+[
+"Young Green Dragon",
+"creature"
+],
+[
+"Young Red Dragon",
+"creature"
+],
+[
+"Young Silver Dragon",
+"creature"
+],
+[
+"Young White Dragon",
+"creature"
+],
+[
+"Zeus",
+"npc"
+],
+[
+"Zombie",
+"creature"
+],
+[
+"Zone of Truth",
+"spell"
+],
+[
+"bottle",
+"item"
+],
+[
+"flask",
+"item"
+],
+[
+"gallon",
+"item"
+],
+[
+"loaf",
+"item"
+],
+[
+"mug",
+"item"
+],
+[
+"one sheet",
+"item"
+],
+[
+"per day",
+"item"
+],
+[
+"pitcher",
+"item"
+],
+[
+"vial",
+"item"
+],
+[
+"wedge",
+"item"
+]
+]
+}

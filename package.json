@@ -1,0 +1,22 @@
+{
+  "name": "bard",
+  "private": true,
+  "packageManager": "yarn@4.9.1",
+  "scripts": {
+    "setup": "cd backend && uv sync --all-groups && cd ../web && pnpm install",
+    "start": "cd backend && uv run bard",
+    "dev:web": "cd web && pnpm dev",
+    "build": "cd web && pnpm build",
+    "test": "yarn test:backend && yarn test:web",
+    "test:backend": "cd backend && uv run pytest",
+    "test:web": "cd web && pnpm test",
+    "lint": "yarn lint:backend && yarn lint:web",
+    "lint:backend": "cd backend && uv run ruff check src tests spike",
+    "lint:web": "cd web && pnpm lint",
+    "typecheck": "cd web && pnpm typecheck",
+    "format": "cd backend && uv run ruff check --fix --select I src tests spike && uv run ruff format src tests spike && cd ../web && pnpm format",
+    "format:check": "cd backend && uv run ruff format --check src tests spike && cd ../web && pnpm format:check",
+    "check": "yarn format:check && yarn lint && yarn typecheck && yarn test && yarn build",
+    "check:live": "cd backend && uv run spike/harden_check.py"
+  }
+}
