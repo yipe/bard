@@ -25,7 +25,7 @@ LLM. No audio or text leaves the machine.
 
 ## Requirements
 
-- A Mac with Apple Silicon (mlx-whisper and torch on MPS).
+- A Mac with Apple Silicon (mlx-whisper and torch on MPS) and `ffmpeg` (`brew install ffmpeg`).
 - [uv](https://docs.astral.sh/uv/) (Python 3.12 is installed for you), Node 24 with Corepack
   (`corepack enable` gives Yarn 4 and pnpm).
 - [LM Studio](https://lmstudio.ai/) serving an OpenAI-compatible API (default

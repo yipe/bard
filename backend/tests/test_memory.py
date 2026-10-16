@@ -169,7 +169,8 @@ def _session(sessions, sid="2026-10-08_193401-eebf", lines=None):
         }
         for i, t in enumerate(lines or ["Dilara, three.", "We found a cave near Dallon.", "Magento waved at us."])
     ]
-    record = build({"id": sid, "started_at": 1791513241.0, "source": None, "duration_s": 600}, players, voices, msgs)
+    started = time.mktime((2026, 10, 8, 19, 34, 1, 0, 0, -1))  # local time: page dates use the table's clock
+    record = build({"id": sid, "started_at": started, "source": None, "duration_s": 600}, players, voices, msgs)
     (sessions / sid).mkdir(parents=True)
     (sessions / sid / "transcript.json").write_text(json.dumps(record))
     return sid
