@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import stat
+import threading
 import time
 import unicodedata
 import uuid
@@ -39,6 +40,7 @@ class FakeService:
         self.blobs: dict[str, bytes] = {}
         self.fail_next_commit: str | None = None  # an error code to answer the next commit with
         self.tampered: dict[str, bytes] = {}  # sha256 -> bytes served instead of the real ones
+        self.rejecting: threading.Barrier | None = None
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self.handle)
@@ -96,6 +98,8 @@ class FakeService:
         if url.startswith(f"{SERVICE}/api/v1/"):
             user = self.tokens.get(request.headers.get("authorization", "").removeprefix("Bearer "))
             if not user:
+                if self.rejecting is not None:
+                    self.rejecting.wait(timeout=5)  # line rejected callers up, so their refreshes race
                 return self.error(401, "unauthorized")
             return self.api(request.method, url.removeprefix(f"{SERVICE}/api/v1"), json.loads(request.content or b"null"))
         raise AssertionError(f"unexpected request {request.method} {url}")
@@ -320,6 +324,24 @@ def test_an_expired_access_token_is_refreshed(client, service):
     service.tokens.clear()  # the service no longer accepts the access token
     client.backup("main", "My campaign", Path("/nowhere"), noop)
     assert any(url == f"{AUTH}/oauth/token" for _, url in service.requests[-6:])
+
+
+def test_concurrent_callers_refresh_once(client, service, vault):
+    """A job and a request both find the access token rejected: one refresh, and the sign-in survives
+    (refresh tokens are single-use, so refreshing twice with the same one would sign the user out)."""
+    connect(client, service)
+    client.backup("main", "The Sunken Gate", vault, noop)
+    service.tokens.clear()
+    service.rejecting = threading.Barrier(2)
+    results: list = []
+    threads = [threading.Thread(target=lambda: results.append(client.vaults())) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=10)
+    assert [len(r) for r in results] == [1, 1]
+    assert sum(1 for _, url in service.requests if url == f"{AUTH}/oauth/token") == 2  # sign-in + one refresh
+    assert client.status("main")["connected"] is True
 
 
 def test_a_revoked_sign_in_disconnects(client, service):

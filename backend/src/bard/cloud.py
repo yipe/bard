@@ -171,6 +171,7 @@ class Cloud:
         self.path = path or (lambda: config.DATA_DIR / "cloud.json")
         self.http = http or httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0), follow_redirects=False)
         self._lock = threading.Lock()
+        self._refresh_lock = threading.Lock()  # one token refresh at a time (see _token)
         self._pending: dict[str, tuple[str, dict, float]] = {}  # state -> (verifier, client config, started)
         self._hashes: dict[Path, tuple[int, int, str]] = {}  # file -> (size, mtime_ns, sha256), for scan()
 
@@ -304,35 +305,42 @@ class Cloud:
 
         self._update(change)
 
-    def _token(self, force_refresh: bool = False) -> str:
-        data = self._load()
-        if not data.get("access_token"):
-            raise NotConnected()
-        if not force_refresh and time.time() < float(data.get("expires_at", 0)) - REFRESH_EARLY_S:
-            return data["access_token"]
-        if not data.get("refresh_token"):
-            self.logout()
-            raise NotConnected()
-        r = self._request(
-            "POST",
-            data["token_url"],
-            data={"grant_type": "refresh_token", "refresh_token": data["refresh_token"], "client_id": data["client_id"]},
-        )
-        if r.status_code in (400, 401):  # revoked or expired for good: sign in again
-            self.logout()
-            raise NotConnected()
-        if r.status_code != 200:
-            raise CloudError("internal", f"Bard Cloud couldn't refresh the sign-in ({r.status_code}).")
-        self._store_tokens(r.json(), {"token_url": data["token_url"], "client_id": data["client_id"]})
-        return self._load()["access_token"]
+    def _token(self, rejected: str | None = None) -> str:
+        """A usable access token, refreshing when it's about to expire or the service just `rejected` it.
+        Refreshes are serialized and re-check the stored state: a job and a request refreshing at once
+        must not both spend the same refresh token (the second would be refused and sign the user out)."""
+        with self._refresh_lock:
+            data = self._load()
+            token = data.get("access_token")
+            if not token:
+                raise NotConnected()
+            fresh = time.time() < float(data.get("expires_at", 0)) - REFRESH_EARLY_S
+            if fresh and token != rejected:
+                return token  # still good, or someone else refreshed it while we waited
+            if not data.get("refresh_token"):
+                self.logout()
+                raise NotConnected()
+            r = self._request(
+                "POST",
+                data["token_url"],
+                data={"grant_type": "refresh_token", "refresh_token": data["refresh_token"], "client_id": data["client_id"]},
+            )
+            if r.status_code in (400, 401):  # revoked or expired for good: sign in again
+                self.logout()
+                raise NotConnected()
+            if r.status_code != 200:
+                raise CloudError("internal", f"Bard Cloud couldn't refresh the sign-in ({r.status_code}).")
+            self._store_tokens(r.json(), {"token_url": data["token_url"], "client_id": data["client_id"]})
+            return self._load()["access_token"]
 
     # ---------------------------------------------------------------- API
 
     def _api(self, method: str, path: str, body: dict | None = None) -> dict | list:
         url = f"{self.url}/api/v1{path}"
-        r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {self._token()}"})
+        token = self._token()
+        r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {token}"})
         if r.status_code == 401:  # the access token may have just expired or been revoked: refresh once
-            r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {self._token(force_refresh=True)}"})
+            r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {self._token(rejected=token)}"})
         try:
             payload = r.json()
         except ValueError:
