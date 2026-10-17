@@ -2,6 +2,7 @@ import { create } from "zustand"
 import { toast } from "sonner"
 import { applyAudioEvent } from "./audio"
 import { applyCampaignEvent, campaignActions } from "./campaignStore"
+import { applyCloudEvent } from "./cloudStore"
 import type {
   CampaignInfo,
   LibraryPlayer,
@@ -242,6 +243,8 @@ export function applyEvent(ev: ServerEvent) {
     case "campaign.updated":
       // Campaign memory has its own store; nothing here changes.
       return applyCampaignEvent(ev)
+    case "cloud.updated":
+      return applyCloudEvent(ev)
   }
 }
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { jobActive } from "@/lib/campaign"
 import { campaignActions, useCampaign } from "@/lib/campaignStore"
 import { AskPanel } from "./AskPanel"
+import { CloudBackupButton } from "./CloudBackupButton"
 import { CampaignFacts } from "./CampaignFacts"
 import { EntityEditor } from "./EntityEditor"
 import { GlossaryList } from "./GlossaryList"
@@ -72,6 +73,7 @@ export function CampaignView() {
               <MessageCircleQuestion /> Ask
             </Button>
           )}
+          <CloudBackupButton />
           <Button size="sm" onClick={() => setImporting(true)}>
             <Upload /> Import notes
           </Button>

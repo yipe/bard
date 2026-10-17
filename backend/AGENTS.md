@@ -20,6 +20,7 @@ Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff ch
 | `cleanup.py` | Spelling cleanup: `Speller.find` (code), `ask` (constrained LLM), `apply` (edits + offsets), `clean_record`. |
 | `improve.py` | Post-session jobs: re-transcribe (`run`), `fix_spellings`, restore. |
 | `dnd_terms.py` | D&D vocabulary: committed SRD list + an optional local list in `data/dnd_terms.json`. |
+| `cloud.py` | Opt-in Bard Cloud backup: OAuth PKCE sign-in, vault scan, plan → signed uploads → commit. Only network code besides the local LLM. |
 | `sim.py` | `bard-sim`: headless re-run of a saved session in a throwaway data dir, with a comparison. |
 | `config.py` | Env-driven settings (`BARD_*`). Paths like `vault_dir()` resolve per call so tests can redirect them. |
 

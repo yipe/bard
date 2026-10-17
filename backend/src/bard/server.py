@@ -6,6 +6,7 @@ WebSocket or calling mutating endpoints (CSRF / DNS rebinding).
 """
 
 import asyncio
+import html
 import json
 import logging
 import threading
@@ -14,9 +15,9 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -25,6 +26,7 @@ from . import config, improve, mics, obsidian, transcript
 from .ask import Asker
 from .audio import list_mics
 from .campaign import TYPES, Vault
+from .cloud import Cloud, CloudError
 from .engine import OVERFLOW, SESSION_ID, Bus, Engine, sample_path, session_audio
 from .memory import Memory, spelling_suggestions
 
@@ -42,6 +44,7 @@ asker = Asker(
     campaign=lambda: engine.campaign,
     seed=engine.known_names,
 )
+cloud = Cloud()  # opt-in backup; contacts the service only once the user connects
 # Held while switching campaigns and while a job is checked and queued: jobs use the open
 # campaign's notes, so one can't be queued for one campaign and then run in another.
 campaign_gate = threading.Lock()
@@ -218,6 +221,10 @@ class ImportIn(BaseModel):
 
 class AskIn(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+
+
+class CloudOptionsIn(BaseModel):
+    include_transcripts: bool
 
 
 def _call(fn, *args, **kwargs):
@@ -492,6 +499,93 @@ def unignore_word(word: str):
 def suggestions():
     """Transcript words that look like misspelled glossary names, and unknown names heard."""
     return spelling_suggestions(vault, engine.campaign_sessions())
+
+
+# ------------------------------------------------------------------ Bard Cloud (opt-in backup)
+
+
+def _cloud_status() -> dict:
+    return cloud.status(engine.campaign) | {"campaign": engine.campaign}
+
+
+@app.get("/api/cloud")
+def cloud_status():
+    """Connected or not, and the open campaign's backup settings and last backup. Never calls the service."""
+    return _cloud_status()
+
+
+@app.post("/api/cloud/connect")
+def cloud_connect():
+    """Start signing in: the first time Bard contacts the service. Returns the page to open."""
+    try:
+        return {"authorize_url": _call(cloud.start_login)}
+    except CloudError as e:
+        raise HTTPException(502, str(e)) from None
+
+
+@app.get("/api/cloud/callback", response_class=HTMLResponse)
+def cloud_callback(
+    code: str = Query("", max_length=2000), state: str = Query("", max_length=200), error: str = Query("", max_length=200)
+):
+    """Where the service's sign-in page sends the browser back (state ties it to a sign-in started here)."""
+    if error or not code or not state:
+        return _cloud_page("Not connected", f"Sign-in didn't finish{f' ({error})' if error else ''}. Try again from Bard.")
+    try:
+        cloud.finish_login(code, state)
+    except (ValueError, CloudError) as e:
+        return _cloud_page("Not connected", str(e))
+    bus.emit("cloud.updated", _cloud_status())
+    return _cloud_page("Connected", "Bard is connected to Bard Cloud. You can close this tab.")
+
+
+def _cloud_page(title: str, text: str) -> str:
+    return (
+        f"<!doctype html><meta charset=utf-8><title>Bard Cloud: {html.escape(title)}</title>"
+        f'<body style="font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem">'
+        f"<h1>{html.escape(title)}</h1><p>{html.escape(text)}</p>"
+    )
+
+
+@app.post("/api/cloud/disconnect")
+def cloud_disconnect():
+    """Forget the sign-in on this Mac (backups already made stay in the cloud)."""
+    cloud.logout()
+    status = _cloud_status()
+    bus.emit("cloud.updated", status)
+    return status
+
+
+@app.put("/api/cloud/options")
+def cloud_options(body: CloudOptionsIn):
+    cloud.set_include_transcripts(engine.campaign, body.include_transcripts)
+    return _cloud_status()
+
+
+@app.post("/api/cloud/backup")
+def cloud_backup():
+    """Back up the open campaign's notes now (a background job: `campaign.job` with kind "backup")."""
+    with campaign_gate:
+        with engine.lock:
+            cid, name, root = engine.campaign, engine.campaigns[engine.campaign].name, engine.vault_dir()
+        if not cloud.status(cid)["connected"]:
+            raise HTTPException(400, "Connect Bard Cloud first.")
+
+        def work(job):
+            def progress(done: int, total: int, message: str) -> None:
+                job.done, job.total, job.message = done, total, message
+                memory.emit(job)
+
+            last = cloud.backup(cid, name, root, progress)
+            job.done = job.total
+            if last["unchanged"]:
+                job.message = f"Nothing changed since the last backup ({last['files']} files)"
+            else:
+                job.message = f"Backed up {last['files']} files ({last['uploaded']} new or changed)"
+            if last["skipped"]:
+                job.message += f"; skipped {len(last['skipped'])}"
+            bus.emit("cloud.updated", cloud.status(cid) | {"campaign": cid})
+
+        return memory.submit("backup", name, work).to_json()
 
 
 @app.get("/api/sources")

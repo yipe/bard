@@ -134,6 +134,26 @@ export type ServerEvent =
   | { type: "campaign.updated"; data: Record<string, never> } // refetch GET /api/campaign
   | { type: "campaigns.updated"; data: Campaigns } // created or renamed; switching sends a snapshot
   | { type: "library.updated"; data: LibraryPlayer[] }
+  | { type: "cloud.updated"; data: CloudStatus }
+
+/* ---- Bard Cloud (opt-in backup of the open campaign's vault) ---- */
+export interface CloudBackup {
+  at: number /* epoch s */
+  snapshot: string
+  files: number
+  bytes: number
+  uploaded: number /* files new or changed in that backup */
+  unchanged: boolean
+  skipped: string[] /* "path: why", at most 50 */
+  quota: { used_bytes: number; limit_bytes: number; after_bytes: number }
+}
+export interface CloudStatus {
+  url: string
+  connected: boolean
+  campaign: string /* the campaign the settings below belong to */
+  include_transcripts: boolean
+  last_backup: CloudBackup | null
+}
 
 /* ---- Campaign memory (an Obsidian vault of notes) ---- */
 export type EntityType = "pc" | "npc" | "place" | "faction" | "item" | "creature" | "spell" | "term"
@@ -175,7 +195,7 @@ export interface CampaignAnswer {
 }
 export interface CampaignJob {
   id: string
-  kind: "import" | "writeup" | "improve" | "spelling"
+  kind: "import" | "writeup" | "improve" | "spelling" | "backup"
   title: string /* notes title, or the session id for a write-up / improve */
   state: "queued" | "running" | "done" | "error"
   done: number

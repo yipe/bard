@@ -2,6 +2,7 @@ import type {
   Campaign,
   CampaignAnswer,
   CampaignInfo,
+  CloudStatus,
   Campaigns,
   CampaignJob,
   CampaignSuggestions,
@@ -173,4 +174,13 @@ export const api = {
   ask: (question: string) => req<CampaignAnswer>("POST", "/api/campaign/ask", { question }),
   writeUp: (sessionId: string) =>
     req<CampaignJob>("POST", `/api/campaign/writeup/${encodeURIComponent(sessionId)}`),
+
+  cloud: () => req<CloudStatus>("GET", "/api/cloud"),
+  /** Start signing in to Bard Cloud: the first call that reaches the service. Open the returned page. */
+  cloudConnect: () => req<{ authorize_url: string }>("POST", "/api/cloud/connect"),
+  cloudDisconnect: () => req<CloudStatus>("POST", "/api/cloud/disconnect"),
+  cloudOptions: (include_transcripts: boolean) =>
+    req<CloudStatus>("PUT", "/api/cloud/options", { include_transcripts }),
+  /** Back up the open campaign's notes (background job, kind "backup"). */
+  cloudBackup: () => req<CampaignJob>("POST", "/api/cloud/backup"),
 }

@@ -274,6 +274,32 @@ re-reads notes when their file changes (edits in Obsidian count).
   real 2.6 h campaign: ~2 s per question with gemma. Gemma closes its JSON string early at an
   inner double quote, so it's told to quote with single quotes.
 
+## Bard Cloud (opt-in backup)
+
+The one thing Bard sends off the Mac, and only after the user connects: a copy of the open
+campaign's vault, kept as snapshots by a separate service (Bard Cloud: Next.js on Vercel, Clerk,
+Neon, private Vercel Blob) that shows it read-only in a browser. Bard works the same without it.
+
+- `cloud.py`. Sign-in: OAuth 2 authorization code + PKCE (S256) with a loopback redirect to
+  `http://127.0.0.1:8765/api/cloud/callback` (fixed: another `BARD_PORT` can't sign in); the
+  service says where to sign in (`GET /api/v1/client`), so Bard only knows `BARD_CLOUD_URL`. The
+  `state` is single-use and expires in 10 min. Tokens (refresh included) in `data/cloud.json`,
+  mode 600; a refused refresh disconnects.
+- Backup (a `campaign.job`, kind `backup`, on the memory job thread, so never mid-write-up): list
+  the vault (no hidden files or folders, no symlinks, `Sessions/Transcripts/` only if the campaign
+  opts in; paths NFC), sha256 each file, `plan` (the service lists what it lacks) → PUT those to
+  signed URLs → `commit` the list as a snapshot. A file the service would refuse (over 20 MB, a
+  path rule, a case-only twin) is left out and listed, not fatal. A lost race (`conflict`), a
+  lost upload (`missing_blobs`) or a note edited mid-backup starts over once. Unchanged vault: no
+  new snapshot.
+- The service's contract: `backend/tests/cloud_contract.schema.json` (copied from the service's
+  `contract.schema.json`); a test fails if its limits or error codes drift from `cloud.py`.
+- API: `GET /api/cloud` (never calls the service), `POST /api/cloud/connect` → `{authorize_url}`,
+  `GET /api/cloud/callback`, `POST /api/cloud/disconnect`, `PUT /api/cloud/options
+  {include_transcripts}`, `POST /api/cloud/backup` → job. Event: `cloud.updated`.
+- UI: Campaign header → **Cloud backup** (connect, back up now, include transcripts, last backup).
+- Not yet: backing up automatically (after a write-up, on vault changes), restoring.
+
 ## Spelling cleanup (behind the transcriber)
 
 D&D vocabulary: Bard ships the SRD 5.1/5.2 names (`srd_terms.json`, ~1.6k spells, creatures,

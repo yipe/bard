@@ -30,6 +30,8 @@ DIARIZER = "pyannote/speaker-diarization-community-1"  # only its speaker-embedd
 DATA_DIR = Path(os.environ.get("BARD_DATA", BACKEND / "data"))
 SAMPLES_DIR = Path(os.environ.get("BARD_SAMPLES", BACKEND / "samples" / "eval"))
 WEB_DIST = REPO / "web" / "dist"
+# Bard Cloud (optional backup + web view of the campaign vault). Nothing is sent until the user connects.
+CLOUD_URL = os.environ.get("BARD_CLOUD_URL", "https://bard-cloud-dprcalc.vercel.app")
 
 
 def vault_dir() -> Path:

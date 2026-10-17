@@ -40,6 +40,8 @@ web/dist/           built UI, served by the backend (git-ignored)
 2. **Never play audio** on the machine. Browsers you drive must be headless with `--mute-audio`.
    Don't start mic sessions; they record the room. Unit tests fake the mic.
 3. **Local only.** No hosted APIs in the product. The LLM is LM Studio at `http://127.0.0.1:1235/v1`.
+   The one exception is opt-in **Bard Cloud** backup (`cloud.py`): nothing is sent until the user
+   clicks Connect, it only uploads the vault, and tests never reach it (`httpx.MockTransport`).
 4. **Only restart the server (`:8765`) when `GET /api/state` shows `session.status == "idle"`.**
    A real game may be running.
 5. **Licensed data and privacy (this repo is public):** only SRD names (CC-BY-4.0, attributed) are
