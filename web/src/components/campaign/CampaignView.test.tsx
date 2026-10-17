@@ -768,7 +768,8 @@ describe("live updates", () => {
   it("campaign.updated refetches the campaign and suggestions (debounced) without touching the live store", async () => {
     const { calls } = server()
     await renderView()
-    const gets = () => calls.filter((c) => c.method === "GET").map((c) => c.url)
+    // The Cloud backup button loads its own status on mount; this test is about campaign refetches.
+    const gets = () => calls.filter((c) => c.method === "GET" && c.url !== "/api/cloud").map((c) => c.url)
     expect(gets().sort()).toEqual(["/api/campaign", "/api/campaign/suggestions"])
     const live = useStore.getState()
 

@@ -213,7 +213,8 @@ describe("Cloud backup", () => {
 
     it("loads by itself and says when the campaign was last backed up", async () => {
       const { calls } = mockFetch((call) => {
-        if (call.url === "/api/cloud") return cloudStatus({ last_backup: backup(5) })
+        // 5.5, not 5: exactly 300 s can come out as 299.99… after float division.
+        if (call.url === "/api/cloud") return cloudStatus({ last_backup: backup(5.5) })
       })
       render(<CloudBackupButton />)
       await act(async () => {})
