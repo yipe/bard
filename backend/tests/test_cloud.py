@@ -734,3 +734,47 @@ def test_api_restore_runs_as_a_job(api, service):
 def test_api_options_turn_automatic_backups_off(api):
     status = api.put("/api/cloud/options", json={"auto_backup": False}).json()
     assert (status["auto_backup"], status["include_transcripts"]) == (False, False)
+
+
+def test_auto_backup_leaves_a_campaign_with_no_notes_alone(client, service, tmp_path):
+    connect(client, service)
+    clock, submitted = Clock(), []
+    runner = AutoBackup(
+        client,
+        current=lambda: ("c-new", "New campaign", tmp_path / "no notes yet"),
+        busy=lambda: False,
+        submit=lambda *a: submitted.append(a),
+        clock=clock,
+    )
+    for _ in range(5):
+        clock.t += 300
+        runner.tick()
+    assert submitted == []
+    assert not service.vaults  # no vault used up on an empty campaign
+
+
+def test_restore_skips_what_it_cant_write_and_keeps_going(client, service, vault, tmp_path):
+    vault_id = backed_up(client, service, vault)
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    (fresh / "Facts.md").mkdir()  # a folder where the note should go
+    (fresh / "People").write_text("a file where a folder should be")
+    result = client.restore(vault_id, fresh, noop)
+    assert result["restored"] == 0
+    assert sorted(s.split(":")[0] for s in result["skipped"]) == ["Facts.md", "People/Elara.md"]
+    assert (fresh / "People").read_text() == "a file where a folder should be"
+    assert not list(fresh.rglob("*.restore.tmp"))
+
+
+def test_api_automatic_failure_is_quiet_but_remembered(api, service):
+    code, state = service.approve(api.post("/api/cloud/connect").json()["authorize_url"])
+    api.get("/api/cloud/callback", params={"code": code, "state": state})
+    notes = config.vault_dir()
+    notes.mkdir(parents=True, exist_ok=True)
+    (notes / "Facts.md").write_text("The gate opens at dawn.\n")
+    service.fail_next_commit = "quota_exceeded"
+    cid, name, root = server._open_campaign()
+    job = wait_job(server._submit_backup(cid, name, root, automatic=True).id)
+    assert job["state"] == "done"  # no red chip in the header
+    assert job["message"].startswith("Automatic backup didn't run")
+    assert api.get("/api/cloud").json()["last_error"]["message"] == "quota_exceeded"

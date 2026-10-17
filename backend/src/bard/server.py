@@ -582,6 +582,14 @@ def _submit_backup(cid: str, name: str, root, automatic: bool = False):
     def work(job):
         try:
             last = cloud.backup(cid, name, root, _job_progress(job))
+        except Exception as e:
+            if not automatic:
+                raise
+            # Offline at the table is normal: no red chip every 10 minutes. The failure stays in the
+            # Cloud backup panel (last_error) and the next automatic attempt retries.
+            log.info("automatic cloud backup failed: %s", e)
+            job.message = f"Automatic backup didn't run: {e}"
+            return
         finally:
             bus.emit("cloud.updated", cloud.status(cid) | {"campaign": cid})
         job.done = job.total

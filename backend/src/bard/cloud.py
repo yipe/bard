@@ -13,6 +13,7 @@ file list as a snapshot. The API contract is `tests/cloud_contract.schema.json`,
 """
 
 import base64
+import contextlib
 import hashlib
 import json
 import logging
@@ -431,6 +432,8 @@ class Cloud:
             target = root / path
             if problem is None and (not _inside(target, root) or target.is_symlink()):
                 problem = "would land outside the campaign folder"
+            if problem is None and target.is_dir():
+                problem = "a folder there has the same name"
             if problem:
                 skipped.append(f"{path}: {problem}")
                 continue
@@ -440,15 +443,22 @@ class Cloud:
             data = self._download(f["url"], f["size"])
             if hashlib.sha256(data).hexdigest() != f["sha256"]:
                 raise CloudError("integrity", f"{path} didn't arrive intact; nothing more was restored.")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if target.exists():
-                kept = trash / path
-                kept.parent.mkdir(parents=True, exist_ok=True)
-                target.replace(kept)
-                counts["replaced"] += 1
+            # Write beside the note first, so a failure leaves the current note where it is.
             tmp = target.with_name(f".{target.name}.restore.tmp")
-            tmp.write_bytes(data)
-            tmp.replace(target)
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                tmp.write_bytes(data)
+                if target.exists():
+                    kept = trash / path
+                    kept.parent.mkdir(parents=True, exist_ok=True)
+                    target.replace(kept)
+                    counts["replaced"] += 1
+                tmp.replace(target)
+            except OSError as e:
+                with contextlib.suppress(OSError):  # e.g. its folder couldn't be made
+                    tmp.unlink()
+                skipped.append(f"{path}: couldn't write it ({e.strerror or type(e).__name__})")
+                continue
             counts["restored"] += 1
         return {**counts, "files": len(files), "snapshot": listing["snapshot"]["id"], "skipped": skipped[:50]}
 
@@ -468,6 +478,10 @@ class Cloud:
                 return bytes(data)
         except httpx.HTTPError as e:
             raise CloudError("network", f"Couldn't reach Bard Cloud ({type(e).__name__}).") from None
+
+
+# What fingerprint() gives for a folder with nothing to back up.
+EMPTY_FINGERPRINT = hashlib.sha256().hexdigest()
 
 
 class AutoBackup:
@@ -501,6 +515,8 @@ class AutoBackup:
             return False
         now = self.clock()
         fp = fingerprint(root, status["include_transcripts"])
+        if fp == EMPTY_FINGERPRINT:
+            return False  # a campaign with no notes yet: nothing to keep, and no vault to use up
         if fp == (status["last_backup"] or {}).get("fingerprint"):
             return False  # backed up as it is now
         seen = self._seen.get(cid)

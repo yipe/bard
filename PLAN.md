@@ -298,13 +298,17 @@ Neon, private Vercel Blob) that shows it read-only in a browser. Bard works the 
   mtimes; no reading). When that differs from the last backup's and has stayed the same for 2 min
   (a write-up or an Obsidian edit has settled), and the last automatic backup was ≥ 10 min ago,
   and no other job is running, it queues a backup job. So a write-up is backed up a couple of
-  minutes after it lands, without any hook into the write-up code.
+  minutes after it lands, without any hook into the write-up code. A campaign with no notes yet is
+  left alone (no empty vault). An automatic backup that fails (offline at the table) doesn't put
+  an error chip in the header; the Cloud backup panel shows it and the next attempt retries.
 - **Restore** (a job, kind `restore`): the newest snapshot of any of the account's vaults (this
   campaign's, or one from another Mac) into the open campaign's folder. Each file is checked
   against its sha256 before it's written; a note that differs is moved to
   `.trash/Before restore <time>/` first; files the snapshot doesn't have are left alone (a restore
   never deletes). Paths go through the same rules as backups and must land inside the folder (no
-  `..`, no writing through symlinks). On the web, a vault also downloads as a .zip.
+  `..`, no writing through symlinks). Each file is written beside its note before the swap, so a
+  file that can't be written (a folder with its name, a file where its folder should be) is
+  skipped and listed, and the note stays as it was. On the web, a vault also downloads as a .zip.
 - The service's contract: `backend/tests/cloud_contract.schema.json` (copied from the service's
   `contract.schema.json`); a test fails if its limits or error codes drift from `cloud.py`.
 - API: `GET /api/cloud` (never calls the service), `POST /api/cloud/connect` → `{authorize_url}`,
