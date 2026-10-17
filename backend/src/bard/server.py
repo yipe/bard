@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, StringConstraints
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import config, improve, mics, obsidian, transcript
+from .ask import Asker
 from .audio import list_mics
 from .campaign import TYPES, Vault
 from .engine import OVERFLOW, SESSION_ID, Bus, Engine, sample_path, session_audio
@@ -33,6 +34,14 @@ engine = Engine(bus)
 vault = Vault(engine.vault_dir)  # the open campaign's notes, looked up on every use
 engine.vault = vault
 memory = Memory(vault, bus, sessions_dir=engine.sessions_dir, seed=engine.known_names)
+asker = Asker(
+    vault,
+    bus,
+    sessions=engine.campaign_sessions,
+    written_up=memory.written_up,
+    campaign=lambda: engine.campaign,
+    seed=engine.known_names,
+)
 # Held while switching campaigns and while a job is checked and queued: jobs use the open
 # campaign's notes, so one can't be queued for one campaign and then run in another.
 campaign_gate = threading.Lock()
@@ -207,6 +216,10 @@ class ImportIn(BaseModel):
     text: str = Field(min_length=1, max_length=2_000_000)
 
 
+class AskIn(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+
+
 def _call(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
@@ -370,6 +383,7 @@ def campaign():
         "entities": [_entity(e) for e in vault.entities()],
         "facts": vault.campaign_facts(),
         "jobs": memory.list_jobs(),
+        "answers": asker.list(),
         "written_up": memory.written_up(),
         "ignored": vault.ignored(),
     }
@@ -441,6 +455,13 @@ def import_notes(body: ImportIn):
     """Pasted notes → a background job (progress arrives as campaign.job events)."""
     with campaign_gate:
         return _call(memory.import_notes, body.title, body.text).to_json()
+
+
+@app.post("/api/campaign/ask")
+def ask(body: AskIn):
+    """A question about the campaign → answered in the background (`campaign.answer` events),
+    from the open campaign's transcripts and notes."""
+    return _call(asker.ask, body.question).to_json()
 
 
 @app.post("/api/campaign/writeup/{sid}")

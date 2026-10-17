@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
-import { BookOpen, Loader2, Upload } from "lucide-react"
+import { BookOpen, Loader2, MessageCircleQuestion, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { jobActive } from "@/lib/campaign"
 import { campaignActions, useCampaign } from "@/lib/campaignStore"
+import { AskPanel } from "./AskPanel"
 import { CampaignFacts } from "./CampaignFacts"
 import { EntityEditor } from "./EntityEditor"
 import { GlossaryList } from "./GlossaryList"
@@ -65,9 +66,16 @@ export function CampaignView() {
             <JobChip key={j.id} job={j} />
           ))}
         </div>
-        <Button size="sm" className="ml-auto" onClick={() => setImporting(true)}>
-          <Upload /> Import notes
-        </Button>
+        <div className="ml-auto flex gap-2">
+          {entity && (
+            <Button size="sm" variant="outline" onClick={() => campaignActions.select(null)}>
+              <MessageCircleQuestion /> Ask
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setImporting(true)}>
+            <Upload /> Import notes
+          </Button>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -82,13 +90,15 @@ export function CampaignView() {
               <EntityEditor key={entity.name} entity={entity} />
             </div>
           ) : (
-            <div className="mx-auto max-w-md space-y-2 pt-16 text-center text-muted-foreground">
-              <BookOpen className="mx-auto size-8" />
-              <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
-              <p className="text-xs">
-                Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Bard spell
-                them right in new transcripts; entries marked for review were suggested by the AI.
-              </p>
+            <div className="mx-auto max-w-2xl space-y-8">
+              <AskPanel />
+              <div className="space-y-2 text-center text-sm text-muted-foreground">
+                <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
+                <p className="text-xs">
+                  Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Bard spell
+                  them right in new transcripts; entries marked for review were suggested by the AI.
+                </p>
+              </div>
             </div>
           )}
         </main>

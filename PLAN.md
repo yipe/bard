@@ -262,6 +262,17 @@ re-reads notes when their file changes (edits in Obsidian count).
 - **Live use**: new lines go through the glossary corrector (heard-as → name, name
   casing unless the name is an English word), and Whisper is prompted with the
   table's names (Setup, voices panel, confirmed entries) plus the last two lines.
+- **Ask** (`ask.py`, `POST /api/campaign/ask {question}` → `campaign.answer` events; the open
+  campaign's answers come with `GET /api/campaign`, in memory only): questions like "who did we
+  suspect has the diamond?" answered from the open campaign's transcripts and vault notes. One LLM
+  call plans (search words with synonyms: diamond → gem, jewel; the glossary entries asked about),
+  code searches (BM25 over 8-line transcript windows, speech only so "Theo as Elara" isn't about
+  Elara, plus every note; an entry is searched under its aliases and heard-as spellings and its
+  note always goes in), and a second call answers from ≤ 14k chars of excerpts, told who's a
+  player, the GM, a PC or an NPC, and to keep suspicions apart from facts. It may only cite the
+  excerpts it got. Runs on its own thread beside the write-up queue (it never writes). On the
+  real 2.6 h campaign: ~2 s per question with gemma. Gemma closes its JSON string early at an
+  inner double quote, so it's told to quote with single quotes.
 
 ## Spelling cleanup (behind the transcriber)
 

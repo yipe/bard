@@ -127,6 +127,7 @@ export type ServerEvent =
     }
   | { type: "error"; data: { message: string } }
   | { type: "campaign.job"; data: CampaignJob }
+  | { type: "campaign.answer"; data: CampaignAnswer }
   | { type: "audio.level"; data: AudioLevel } // ~10/s while a mic is open
   | { type: "audio.quality"; data: AudioQuality } // every 2 s, over the last ~15 s
   | { type: "mic.test"; data: { state: "running" | "stopped" } }
@@ -149,6 +150,28 @@ export interface Entity {
   suggested_facts: string[]
   path: string | null /* vault-relative, e.g. "People/Elara.md" */
   read_only: boolean
+}
+/** A source an answer cites: a transcript excerpt, a glossary entry or another vault note. */
+export interface AnswerSource {
+  id: string /* "S1"…, as the model cited it */
+  kind: "transcript" | "entry" | "note"
+  label: string /* "2026-10-08 The Desert Road · 01:15", or a vault-relative path */
+  session: string | null /* transcript: saved session id */
+  t: number | null /* transcript: seconds into the session */
+  path: string | null /* entry or note: vault-relative */
+  entry: string | null /* entry: its name */
+  excerpt: string
+}
+/** A question about the campaign, answered by the local LLM from transcripts and notes. */
+export interface CampaignAnswer {
+  id: string
+  question: string
+  state: "queued" | "searching" | "thinking" | "done" | "error"
+  answer: string
+  found: boolean /* false: the sources didn't answer it */
+  sources: AnswerSource[]
+  message: string /* error */
+  created: number /* epoch s */
 }
 export interface CampaignJob {
   id: string
@@ -175,6 +198,7 @@ export interface Campaign {
   entities: Entity[]
   facts: string[] /* campaign-wide */
   jobs: CampaignJob[]
+  answers: CampaignAnswer[] /* the open campaign's, oldest first */
   written_up: Record<string, string> /* session id -> vault-relative path of its session page */
   ignored: string[] /* words never suggested again (vault note "Ignored words.md") */
 }

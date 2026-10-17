@@ -238,6 +238,7 @@ export function applyEvent(ev: ServerEvent) {
       // Audio read-outs have their own store/pub-sub; nothing here changes.
       return applyAudioEvent(ev)
     case "campaign.job":
+    case "campaign.answer":
     case "campaign.updated":
       // Campaign memory has its own store; nothing here changes.
       return applyCampaignEvent(ev)

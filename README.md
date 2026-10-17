@@ -20,6 +20,8 @@ LLM. No audio or text leaves the machine.
   fix keeps what was heard.
 - **Campaign wiki.** Import your notes, then write up each session: events, facts, new names and
   suggested spellings, all for you to review. Notes stay editable in Obsidian.
+- **Ask about the campaign.** "Who did we suspect has the diamond?" The local LLM searches every
+  transcript and note, knows who's a player, a PC or an NPC, and answers with its sources.
 - **History.** Every session autosaves its transcript, recording and setup, with Markdown/JSON
   export, an audio-quality report and an "Improve transcript" pass.
 

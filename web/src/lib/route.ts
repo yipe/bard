@@ -78,6 +78,11 @@ function apply(r: Route) {
   }
 }
 
+/** Open a saved session in History by id (e.g. from an answer's source). */
+export function openSessionById(id: string) {
+  void openById(id)
+}
+
 /** The viewer needs the session's summary, which only the list endpoint returns. */
 async function openById(id: string) {
   pending = id

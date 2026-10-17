@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { toast } from "sonner"
 import { api } from "./api"
-import type { Campaign, CampaignJob, CampaignSuggestions, Entity } from "./types"
+import type { Campaign, CampaignAnswer, CampaignJob, CampaignSuggestions, Entity } from "./types"
 
 /**
  * Campaign memory state, separate from the live transcript store. Loaded lazily by the views that
@@ -17,6 +17,8 @@ interface CampaignState {
   jobs: Record<string, CampaignJob>
   /** Failed jobs the user dismissed from the header. */
   dismissed: Record<string, true>
+  /** Questions and their answers by id; from GET /api/campaign and `campaign.answer` events. */
+  answers: Record<string, CampaignAnswer>
   /** Name of the entry open in the editor. */
   selected: string | null
 }
@@ -28,6 +30,7 @@ export const useCampaign = create<CampaignState>(() => ({
   hidden: {},
   jobs: {},
   dismissed: {},
+  answers: {},
   selected: null,
 }))
 
@@ -43,6 +46,14 @@ async function loadCampaign() {
       campaign,
       loadError: null,
       jobs: { ...s.jobs, ...Object.fromEntries(campaign.jobs.map((j) => [j.id, j])) },
+      // The server keeps the open campaign's answers. An answer that already ended here stays as
+      // it is: a refetch that started earlier mustn't put a spinner back.
+      answers: Object.fromEntries(
+        campaign.answers.map((a) => {
+          const mine = s.answers[a.id]
+          return [a.id, mine && (mine.state === "done" || mine.state === "error") ? mine : a]
+        }),
+      ),
     }))
   } catch (e) {
     set({ loadError: (e as Error).message })
@@ -192,8 +203,10 @@ export const campaignActions = {
 
   dismissJob: (id: string) => set((s) => ({ dismissed: { ...s.dismissed, [id]: true } })),
 
+  putAnswer: (answer: CampaignAnswer) => set((s) => ({ answers: { ...s.answers, [answer.id]: answer } })),
+
   /** Another campaign was opened: its notes arrive with the `campaign.updated` refetch. */
-  campaignChanged: () => set({ selected: null, hidden: {} }),
+  campaignChanged: () => set({ selected: null, hidden: {}, answers: {} }),
 }
 
 export const REFETCH_DEBOUNCE_MS = 300
@@ -201,9 +214,13 @@ let refetchTimer: number | undefined
 
 /** Called by the live event loop for `campaign.*` events. */
 export function applyCampaignEvent(
-  ev: { type: "campaign.job"; data: CampaignJob } | { type: "campaign.updated" },
+  ev:
+    | { type: "campaign.job"; data: CampaignJob }
+    | { type: "campaign.answer"; data: CampaignAnswer }
+    | { type: "campaign.updated" },
 ) {
   if (ev.type === "campaign.job") return campaignActions.putJob(ev.data)
+  if (ev.type === "campaign.answer") return campaignActions.putAnswer(ev.data)
   clearTimeout(refetchTimer)
   refetchTimer = window.setTimeout(() => {
     const s = useCampaign.getState()

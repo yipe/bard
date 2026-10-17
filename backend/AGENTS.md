@@ -16,6 +16,7 @@ Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff ch
 | `campaign.py` | Obsidian vault: `Vault`, entity notes (frontmatter + Facts sections), `Corrector`, `everyday()`. |
 | `obsidian.py` | Finds the campaign folder in Obsidian's vault registry, so links name the vault by id. |
 | `memory.py` | Campaign jobs (note import, session write-up), job runner, spelling suggestions, `looks_like`. |
+| `ask.py` | Ask: questions answered from the campaign's transcripts and notes (LLM plan → BM25 search → LLM answer with citations). |
 | `cleanup.py` | Spelling cleanup: `Speller.find` (code), `ask` (constrained LLM), `apply` (edits + offsets), `clean_record`. |
 | `improve.py` | Post-session jobs: re-transcribe (`run`), `fix_spellings`, restore. |
 | `dnd_terms.py` | D&D vocabulary: committed SRD list + an optional local list in `data/dnd_terms.json`. |

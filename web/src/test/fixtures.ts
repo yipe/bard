@@ -148,6 +148,7 @@ export function campaign(c: Partial<Campaign> = {}): Campaign {
     entities: [],
     facts: [],
     jobs: [],
+    answers: [],
     written_up: {},
     ignored: [],
     ...c,
