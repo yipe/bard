@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Cloud, CloudOff, ExternalLink, Loader2 } from "lucide-react"
+import { AlertCircle, Cloud, CloudOff, ExternalLink, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/native-select"
@@ -8,14 +8,41 @@ import { Switch } from "@/components/ui/switch"
 import { jobActive } from "@/lib/campaign"
 import { useCampaign } from "@/lib/campaignStore"
 import { cloudActions, useCloud } from "@/lib/cloudStore"
+import { useStore } from "@/lib/store"
+import { ago, when } from "@/lib/time"
 import type { CampaignJob, CloudStatus, CloudVault } from "@/lib/types"
-
-function when(epochS: number): string {
-  return new Date(epochS * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-}
 
 const running = (kind: CampaignJob["kind"]) => (s: { jobs: Record<string, CampaignJob> }) =>
   Object.values(s.jobs).some((j) => j.kind === kind && jobActive(j))
+
+/** A failure newer than the last good backup; an older one is history, not news. */
+const failure = (status: CloudStatus) =>
+  status.last_error && (!status.last_backup || status.last_error.at > status.last_backup.at)
+    ? status.last_error
+    : null
+
+/** The current time, updated every minute, so "5 min ago" stays true. */
+function useMinuteClock(): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  return now
+}
+
+/** What the header button says: when the open campaign was last backed up, at a glance. */
+function summary(
+  status: CloudStatus | null,
+  now: number,
+): { text: string; title?: string; failed?: boolean } {
+  if (!status?.connected) return { text: "Cloud backup" }
+  const failed = failure(status)
+  if (failed) return { text: "Backup failed", title: `${when(failed.at)}: ${failed.message}`, failed: true }
+  const last = status.last_backup
+  if (!last) return { text: "Not backed up yet" }
+  return { text: `Backed up ${ago(last.at, now)}`, title: `Last backup ${when(last.at)}` }
+}
 
 /**
  * Campaign header: back up the open campaign's notes to Bard Cloud (opt-in), automatically or now, and
@@ -23,16 +50,33 @@ const running = (kind: CampaignJob["kind"]) => (s: { jobs: Record<string, Campai
  */
 export function CloudBackupButton() {
   const status = useCloud((s) => s.status)
+  const campaign = useStore((s) => s.campaign)
   const [open, setOpen] = useState(false)
+  const now = useMinuteClock()
 
+  // GET /api/cloud is local (never calls the service): load it with the campaign, and again on opening.
+  useEffect(() => {
+    void cloudActions.refresh({ quiet: true })
+  }, [campaign])
   useEffect(() => {
     if (open) void cloudActions.refresh()
   }, [open])
 
+  const label = summary(status, now)
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button size="sm" variant="outline" />}>
-        {status?.connected === false ? <CloudOff /> : <Cloud />} Cloud backup
+      <PopoverTrigger
+        render={
+          <Button
+            size="sm"
+            variant="outline"
+            title={label.title}
+            aria-label={`Cloud backup: ${label.text}`}
+            className={label.failed ? "text-destructive" : undefined}
+          />
+        }
+      >
+        {label.failed ? <AlertCircle /> : status?.connected === false ? <CloudOff /> : <Cloud />} {label.text}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3 p-3 text-sm">
         <PopoverTitle className="font-medium">Bard Cloud backup</PopoverTitle>
@@ -59,8 +103,7 @@ export function CloudBackupButton() {
 function Connected({ status }: { status: CloudStatus }) {
   const backingUp = useCampaign(running("backup"))
   const last = status.last_backup
-  // A failure older than the last good backup is history, not news.
-  const failed = status.last_error && (!last || status.last_error.at > last.at) ? status.last_error : null
+  const failed = failure(status)
   return (
     <>
       <p className="text-muted-foreground">

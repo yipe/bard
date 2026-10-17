@@ -19,7 +19,11 @@ async function run<T>(work: () => Promise<T>): Promise<T | undefined> {
 }
 
 export const cloudActions = {
-  refresh: () => run(async () => set({ status: await api.cloud() })),
+  /** `quiet`: a background load (the header's) that shouldn't toast when the server is briefly away. */
+  refresh: ({ quiet = false } = {}) => {
+    const load = async () => set({ status: await api.cloud() })
+    return quiet ? load().catch(() => undefined) : run(load)
+  },
   /** Opens the service's sign-in page in a new tab; it comes back to Bard, which sends `cloud.updated`.
    * The tab opens during the click (after an await, browsers block pop-ups) and loses its opener, so
    * the sign-in page can't reach back into Bard's tab. */

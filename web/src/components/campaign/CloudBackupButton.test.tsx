@@ -196,4 +196,54 @@ describe("Cloud backup", () => {
     act(() => applyEvent({ type: "cloud.updated", data: cloudStatus() }))
     expect(screen.getByRole("button", { name: /Back up now/ })).toBeInTheDocument()
   })
+
+  describe("the header button", () => {
+    const backup = (minutesAgo: number) => ({
+      at: Date.now() / 1000 - minutesAgo * 60,
+      snapshot: "s1",
+      files: 4,
+      bytes: 10,
+      uploaded: 1,
+      unchanged: false,
+      skipped: [],
+      quota: { used_bytes: 0, limit_bytes: 1, after_bytes: 0 },
+      fingerprint: "f",
+    })
+    const button = () => screen.getByRole("button", { name: /Cloud backup/ })
+
+    it("loads by itself and says when the campaign was last backed up", async () => {
+      const { calls } = mockFetch((call) => {
+        if (call.url === "/api/cloud") return cloudStatus({ last_backup: backup(5) })
+      })
+      render(<CloudBackupButton />)
+      await act(async () => {})
+      expect(calls.map((c) => c.url)).toEqual(["/api/cloud"]) // without opening the popover
+      expect(button()).toHaveTextContent("Backed up 5 min ago")
+      expect(button()).toHaveAttribute("title", expect.stringMatching(/^Last backup /))
+    })
+
+    it("says so when the newest backup failed, or none has run, or it isn't connected", async () => {
+      const failed = cloudStatus({
+        last_backup: backup(30),
+        last_error: { at: Date.now() / 1000, message: "offline" },
+      })
+      mockFetch((call) => {
+        if (call.url === "/api/cloud") return failed
+      })
+      render(<CloudBackupButton />)
+      await act(async () => {})
+      expect(button()).toHaveTextContent("Backup failed")
+      act(() => applyEvent({ type: "cloud.updated", data: cloudStatus() }))
+      expect(button()).toHaveTextContent("Not backed up yet")
+      act(() => applyEvent({ type: "cloud.updated", data: cloudStatus({ connected: false }) }))
+      expect(button()).toHaveTextContent(/^\s*Cloud backup$/)
+    })
+
+    it("stays quiet if the local server can't be reached", async () => {
+      mockFetch(() => new Response(null, { status: 500 }))
+      render(<CloudBackupButton />)
+      await act(async () => {})
+      expect(button()).toHaveTextContent("Cloud backup")
+    })
+  })
 })
