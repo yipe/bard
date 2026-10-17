@@ -16,7 +16,9 @@ function cloudStatus(over: Partial<CloudStatus> = {}): CloudStatus {
     connected: true,
     campaign: "main",
     include_transcripts: false,
+    auto_backup: true,
     last_backup: null,
+    last_error: null,
     ...over,
   }
 }
@@ -76,6 +78,7 @@ describe("Cloud backup", () => {
       unchanged: false,
       skipped: ["map.png: larger than 20 MB"],
       quota: { used_bytes: 1000, limit_bytes: 10000, after_bytes: 1000 },
+      fingerprint: "f",
     }
     const { writes } = mockFetch((call) => {
       if (call.url === "/api/cloud") return cloudStatus({ last_backup: last })
@@ -97,18 +100,92 @@ describe("Cloud backup", () => {
     expect(screen.getByRole("button", { name: /Back up now/ })).toBeEnabled()
   })
 
-  it("switches transcripts on for this campaign", async () => {
+  it("switches transcripts on and automatic backups off for this campaign", async () => {
     const { writes } = mockFetch((call) => {
       if (call.url === "/api/cloud") return cloudStatus()
-      if (call.url === "/api/cloud/options") return cloudStatus({ include_transcripts: true })
+      if (call.url === "/api/cloud/options") return cloudStatus({ ...(call.body as object) })
     })
     await openPopover()
-    fireEvent.click(screen.getByRole("switch"))
+    expect(screen.getByRole("switch", { name: /Back up automatically/ })).toBeChecked()
+    fireEvent.click(screen.getByRole("switch", { name: /Include transcripts/ }))
+    await act(async () => {})
+    fireEvent.click(screen.getByRole("switch", { name: /Back up automatically/ }))
     await act(async () => {})
     expect(writes()).toEqual([
       { method: "PUT", url: "/api/cloud/options", body: { include_transcripts: true } },
+      { method: "PUT", url: "/api/cloud/options", body: { auto_backup: false } },
     ])
-    expect(screen.getByRole("switch")).toBeChecked()
+    expect(screen.getByRole("switch", { name: /Back up automatically/ })).not.toBeChecked()
+  })
+
+  it("shows a failed backup until a later one succeeds", async () => {
+    const at = Date.UTC(2026, 9, 16, 20, 0) / 1000
+    const last = {
+      at,
+      snapshot: "s1",
+      files: 4,
+      bytes: 10,
+      uploaded: 0,
+      unchanged: true,
+      skipped: [],
+      quota: { used_bytes: 0, limit_bytes: 1, after_bytes: 0 },
+      fingerprint: "f",
+    }
+    mockFetch((call) => {
+      if (call.url === "/api/cloud")
+        return cloudStatus({ last_backup: last, last_error: { at: at + 60, message: "offline" } })
+    })
+    await openPopover()
+    expect(screen.getByRole("alert")).toHaveTextContent("offline")
+    act(() =>
+      applyEvent({
+        type: "cloud.updated",
+        data: cloudStatus({
+          last_backup: { ...last, at: at + 120 },
+          last_error: { at: at + 60, message: "offline" },
+        }),
+      }),
+    )
+    expect(screen.queryByRole("alert")).toBeNull()
+  })
+
+  it("restores this campaign by default, from the campaigns backed up", async () => {
+    const vaults = [
+      { id: "v-other", name: "Old table", bard_campaign_id: "c1", head_snapshot: "s9", created_at: "" },
+      {
+        id: "v-main",
+        name: "The Sunken Gate",
+        bard_campaign_id: "main",
+        head_snapshot: "s1",
+        created_at: "",
+      },
+      { id: "v-empty", name: "Never backed up", bard_campaign_id: "c2", head_snapshot: null, created_at: "" },
+    ]
+    const { writes } = mockFetch((call) => {
+      if (call.url === "/api/cloud") return cloudStatus()
+      if (call.url === "/api/cloud/vaults") return vaults
+      if (call.url === "/api/cloud/restore")
+        return campaignJob({ id: "r1", kind: "restore", title: "The Sunken Gate" })
+    })
+    await openPopover()
+    fireEvent.click(screen.getByRole("button", { name: /Restore…/ }))
+    await act(async () => {})
+    const select = screen.getByLabelText("Restore notes from") as HTMLSelectElement
+    expect(select.value).toBe("v-main")
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      "Old table",
+      "The Sunken Gate (this campaign)",
+    ])
+    expect(screen.getByText(/Nothing is deleted/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }))
+    await act(async () => {})
+    expect(writes()).toEqual([{ method: "POST", url: "/api/cloud/restore", body: { vault_id: "v-main" } }])
+    expect(screen.getByRole("button", { name: /Restore…/ })).toBeDisabled() // until the job ends
+    act(() =>
+      applyEvent({ type: "campaign.job", data: campaignJob({ id: "r1", kind: "restore", state: "done" }) }),
+    )
+    expect(screen.getByRole("button", { name: /Restore…/ })).toBeEnabled()
   })
 
   it("follows cloud.updated events (sign-in finished in the other tab)", async () => {

@@ -3,6 +3,7 @@ import type {
   CampaignAnswer,
   CampaignInfo,
   CloudStatus,
+  CloudVault,
   Campaigns,
   CampaignJob,
   CampaignSuggestions,
@@ -179,8 +180,12 @@ export const api = {
   /** Start signing in to Bard Cloud: the first call that reaches the service. Open the returned page. */
   cloudConnect: () => req<{ authorize_url: string }>("POST", "/api/cloud/connect"),
   cloudDisconnect: () => req<CloudStatus>("POST", "/api/cloud/disconnect"),
-  cloudOptions: (include_transcripts: boolean) =>
-    req<CloudStatus>("PUT", "/api/cloud/options", { include_transcripts }),
+  cloudOptions: (options: { include_transcripts?: boolean; auto_backup?: boolean }) =>
+    req<CloudStatus>("PUT", "/api/cloud/options", options),
   /** Back up the open campaign's notes (background job, kind "backup"). */
   cloudBackup: () => req<CampaignJob>("POST", "/api/cloud/backup"),
+  /** This account's campaigns in Bard Cloud, from any Mac. */
+  cloudVaults: () => req<CloudVault[]>("GET", "/api/cloud/vaults"),
+  /** Bring a backed-up campaign's newest notes into the open campaign (background job, kind "restore"). */
+  cloudRestore: (vault_id: string) => req<CampaignJob>("POST", "/api/cloud/restore", { vault_id }),
 }

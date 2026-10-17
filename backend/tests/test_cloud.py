@@ -18,7 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from bard import cloud, config, server
-from bard.cloud import Cloud, CloudError, NotConnected, path_problem, scan
+from bard.cloud import AutoBackup, Cloud, CloudError, NotConnected, fingerprint, path_problem, scan
 
 SERVICE = "https://cloud.test"
 AUTH = "https://auth.test"
@@ -38,6 +38,7 @@ class FakeService:
         self.snapshots: dict[str, list[dict]] = {}
         self.blobs: dict[str, bytes] = {}
         self.fail_next_commit: str | None = None  # an error code to answer the next commit with
+        self.tampered: dict[str, bytes] = {}  # sha256 -> bytes served instead of the real ones
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self.handle)
@@ -82,6 +83,9 @@ class FakeService:
                 return httpx.Response(200, json=self._issue("user_gm"))
             user = self.refresh.pop(form["refresh_token"][0], None)
             return httpx.Response(200, json=self._issue(user)) if user else httpx.Response(400, json={"error": "invalid_grant"})
+        if url.startswith("https://download.test/"):
+            data = self.tampered.get(url.rsplit("/", 1)[1]) or self.blobs.get(url.rsplit("/", 1)[1])
+            return httpx.Response(200, content=data) if data is not None else httpx.Response(404)
         if url.startswith("https://upload.test/"):
             sha = url.rsplit("/", 1)[1]
             if sha in self.blobs:
@@ -111,6 +115,16 @@ class FakeService:
             v = {"id": str(uuid.uuid4()), "head_snapshot": None, "created_at": "2026-10-17T00:00:00Z", **body}
             self.vaults[v["id"]] = v
             return httpx.Response(200, json=v)
+        if (method, path) == ("GET", "/vaults"):
+            return httpx.Response(200, json=list(self.vaults.values()))
+        if method == "GET" and "/snapshots/" in path:
+            vault_id, snap_id = path.removeprefix("/vaults/").split("/snapshots/")
+            files = self.snapshots.get(snap_id) if vault_id in self.vaults else None
+            if files is None:
+                return self.error(404, "not_found")
+            listed = [f | {"url": f"https://download.test/{f['sha256']}"} for f in files]
+            snap = {"id": snap_id, "parent": None, "created_at": "2026-10-17T00:00:00Z", "file_count": len(files)}
+            return httpx.Response(200, json={"snapshot": snap | {"total_bytes": 0, "message": None}, "files": listed})
         vault_id, action = path.removeprefix("/vaults/").split("/")
         vault = self.vaults[vault_id]
         files = body["files"]
@@ -319,13 +333,15 @@ def test_a_revoked_sign_in_disconnects(client, service):
 
 def test_disconnect_forgets_tokens_but_keeps_settings(client, service):
     connect(client, service)
-    client.set_include_transcripts("main", True)
+    client.set_options("main", include_transcripts=True)
     client.logout()
     assert client.status("main") | {"url": None} == {
         "url": None,
         "connected": False,
         "include_transcripts": True,
+        "auto_backup": True,
         "last_backup": None,
+        "last_error": None,
     }
 
 
@@ -356,7 +372,7 @@ def test_transcripts_go_up_only_when_the_campaign_opts_in(client, service, vault
     connect(client, service)
     client.backup("main", "The Sunken Gate", vault, noop)
     assert b"GM: You see a gate.\n" not in service.blobs.values()
-    client.set_include_transcripts("main", True)
+    client.set_options("main", include_transcripts=True)
     assert client.backup("main", "The Sunken Gate", vault, noop)["files"] == 3
     assert b"GM: You see a gate.\n" in service.blobs.values()
 
@@ -380,8 +396,8 @@ def test_a_note_changing_mid_upload_starts_over(client, service, vault, monkeypa
     connect(client, service)
     real_scan, calls = cloud.scan, []
 
-    def scan_then_edit(root, include):
-        out = real_scan(root, include)
+    def scan_then_edit(root, include, cache=None):
+        out = real_scan(root, include, cache)
         calls.append(1)
         if len(calls) == 1:
             (vault / "Facts.md").write_text("Edited in Obsidian meanwhile.\n")
@@ -424,7 +440,8 @@ def api(dirs, service, monkeypatch):
 
 def test_api_status_and_backup_needs_connecting(api, service):
     status = api.get("/api/cloud").json()
-    assert (status["connected"], status["include_transcripts"], status["last_backup"]) == (False, False, None)
+    assert (status["connected"], status["include_transcripts"], status["auto_backup"]) == (False, False, True)
+    assert status["last_backup"] is None
     assert api.post("/api/cloud/backup").status_code == 400
     assert service.requests == []
 
@@ -467,3 +484,231 @@ def test_api_backup_runs_as_a_job(api, service, dirs):
     assert job["state"] == "done", job["message"]
     assert job["message"].startswith("Backed up")
     assert api.get("/api/cloud").json()["last_backup"]["files"] >= 1
+
+
+# ---------------------------------------------------------------- failures are remembered
+
+
+def test_a_failed_backup_is_remembered_until_one_succeeds(client, service, vault):
+    connect(client, service)
+    service.fail_next_commit = "quota_exceeded"
+    with pytest.raises(CloudError):
+        client.backup("main", "The Sunken Gate", vault, noop)
+    assert client.status("main")["last_error"]["message"] == "quota_exceeded"
+    client.backup("main", "The Sunken Gate", vault, noop)
+    assert client.status("main")["last_error"] is None
+
+
+# ---------------------------------------------------------------- fingerprint and automatic backups
+
+
+def test_fingerprint_follows_backed_up_files_only(vault):
+    base = fingerprint(vault, include_transcripts=False)
+    (vault / ".obsidian" / "workspace.json").write_text('{"open": 2}')
+    (vault / "Sessions" / "Transcripts" / "s1.md").write_text("GM: You see two gates.\n")
+    assert fingerprint(vault, include_transcripts=False) == base
+    assert fingerprint(vault, include_transcripts=True) != fingerprint(vault, include_transcripts=False)
+    (vault / "People" / "Elara.md").write_text("# Elara\nA half-elf ranger, now a captain.\n")
+    edited = fingerprint(vault, include_transcripts=False)
+    assert edited != base
+    (vault / "Places").mkdir()
+    (vault / "Places" / "Ül Dar.md").write_text("# Ül Dar\n")
+    assert fingerprint(vault, include_transcripts=False) != edited
+    (vault / "Places" / "Ül Dar.md").unlink()
+    assert fingerprint(vault, include_transcripts=False) == edited
+
+
+class Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+@pytest.fixture
+def auto(client, service, vault):
+    """An AutoBackup on a fake clock whose submit runs the backup right away (as the job thread would)."""
+    clock, submitted, state = Clock(), [], {"campaign": "main", "busy": False}
+
+    def submit(cid, name, root):
+        submitted.append(cid)
+        client.backup(cid, name, root, noop)
+
+    runner = AutoBackup(
+        client,
+        current=lambda: (state["campaign"], "The Sunken Gate", vault),
+        busy=lambda: state["busy"],
+        submit=submit,
+        clock=clock,
+    )
+    return runner, clock, submitted, state
+
+
+def test_auto_backup_waits_for_connecting(auto, service):
+    runner, clock, submitted, _ = auto
+    for _ in range(10):
+        clock.t += 60
+        runner.tick()
+    assert submitted == []
+    assert service.requests == []
+
+
+def test_auto_backup_waits_for_the_notes_to_settle_then_backs_up_once(auto, client, service, vault):
+    runner, clock, submitted, _ = auto
+    connect(client, service)
+    assert runner.tick() is False  # first sight of these notes
+    clock.t += 60
+    assert runner.tick() is False  # not quiet for long enough yet
+    clock.t += 61
+    assert runner.tick() is True
+    assert submitted == ["main"]
+    for _ in range(5):
+        clock.t += 300
+        assert runner.tick() is False  # backed up as they are
+
+
+def test_auto_backup_follows_an_edit_but_not_more_often_than_the_gap(auto, client, service, vault):
+    runner, clock, submitted, _ = auto
+    connect(client, service)
+    runner.tick()
+    clock.t += AutoBackup.QUIET_S
+    runner.tick()
+    (vault / "Facts.md").write_text("The gate opens at dusk.\n")
+    runner.tick()
+    clock.t += AutoBackup.QUIET_S
+    assert runner.tick() is False  # quiet, but the last automatic backup was too recent
+    clock.t += AutoBackup.MIN_GAP_S
+    assert runner.tick() is True
+    assert len(submitted) == 2
+    assert b"The gate opens at dusk.\n" in service.blobs.values()
+
+
+def test_auto_backup_respects_the_switch_and_busy_jobs(auto, client, service):
+    runner, clock, submitted, state = auto
+    connect(client, service)
+    client.set_options("main", auto_backup=False)
+    for _ in range(3):
+        clock.t += 300
+        runner.tick()
+    assert submitted == []
+    client.set_options("main", auto_backup=True)
+    state["busy"] = True
+    runner.tick()
+    clock.t += 300
+    assert runner.tick() is False
+    state["busy"] = False
+    assert runner.tick() is True
+
+
+def test_auto_backup_keeps_each_campaign_apart(auto, client, service):
+    runner, clock, submitted, state = auto
+    connect(client, service)
+    runner.tick()
+    state["campaign"] = "c0123456789"
+    clock.t += 300
+    assert runner.tick() is False  # a different campaign: its own quiet period starts now
+    clock.t += AutoBackup.QUIET_S
+    assert runner.tick() is True
+    assert submitted == ["c0123456789"]
+
+
+# ---------------------------------------------------------------- restore
+
+
+def backed_up(client, service, vault) -> str:
+    connect(client, service)
+    client.backup("main", "The Sunken Gate", vault, noop)
+    return next(iter(service.vaults))
+
+
+def test_restore_brings_notes_back_and_keeps_what_it_replaces(client, service, vault):
+    vault_id = backed_up(client, service, vault)
+    (vault / "People" / "Elara.md").unlink()
+    (vault / "Facts.md").write_text("Scribbled over.\n")
+    (vault / "Only here.md").write_text("Written after the backup.\n")
+    result = client.restore(vault_id, vault, noop)
+    assert (result["restored"], result["replaced"], result["unchanged"]) == (2, 1, 0)
+    assert (vault / "People" / "Elara.md").read_text() == "# Elara\nA half-elf ranger.\n"
+    assert (vault / "Facts.md").read_text() == "The gate opens at dawn.\n"
+    (kept,) = (vault / ".trash").glob("Before restore */Facts.md")
+    assert kept.read_text() == "Scribbled over.\n"
+    assert (vault / "Only here.md").read_text() == "Written after the backup.\n"  # a restore never deletes
+    assert not list(vault.rglob("*.restore.tmp"))
+
+
+def test_restore_into_an_empty_folder_on_a_new_mac(client, service, vault, tmp_path):
+    vault_id = backed_up(client, service, vault)
+    fresh = tmp_path / "new mac" / "campaign"
+    result = client.restore(vault_id, fresh, noop)
+    assert result["restored"] == 2
+    assert (fresh / "People" / "Elara.md").read_text() == "# Elara\nA half-elf ranger.\n"
+    again = client.restore(vault_id, fresh, noop)
+    assert (again["restored"], again["unchanged"]) == (0, 2)
+
+
+def test_restore_refuses_damaged_downloads(client, service, vault, tmp_path):
+    vault_id = backed_up(client, service, vault)
+    facts = hashlib.sha256(b"The gate opens at dawn.\n").hexdigest()
+    service.tampered[facts] = b"The gate opens at dusk.\n"
+    fresh = tmp_path / "fresh"
+    with pytest.raises(CloudError, match="didn't arrive intact"):
+        client.restore(vault_id, fresh, noop)
+    assert not (fresh / "Facts.md").exists()
+
+
+def test_restore_never_writes_outside_the_campaign_folder(client, service, vault, tmp_path):
+    vault_id = backed_up(client, service, vault)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    (fresh / "People").symlink_to(outside, target_is_directory=True)
+    head = service.vaults[vault_id]["head_snapshot"]
+    sha = hashlib.sha256(b"The gate opens at dawn.\n").hexdigest()
+    service.snapshots[head] += [{"path": "../escape.md", "sha256": sha, "size": 24}]
+    result = client.restore(vault_id, fresh, noop)
+    assert not list(outside.iterdir())
+    assert not (tmp_path / "escape.md").exists()
+    assert sorted(s.split(":")[0] for s in result["skipped"]) == ["../escape.md", "People/Elara.md"]
+
+
+def test_restore_of_unknown_or_empty_vaults(client, service, vault):
+    connect(client, service)
+    with pytest.raises(CloudError, match="isn't in Bard Cloud"):
+        client.restore(str(uuid.uuid4()), vault, noop)
+    service.api("POST", "/vaults", {"name": "Empty", "bard_campaign_id": "empty"})
+    empty = next(v["id"] for v in service.vaults.values() if v["bard_campaign_id"] == "empty")
+    with pytest.raises(CloudError, match="hasn't been backed up yet"):
+        client.restore(empty, vault, noop)
+
+
+def wait_job(job_id: str) -> dict:
+    for _ in range(300):
+        job = next(j for j in server.memory.list_jobs() if j["id"] == job_id)
+        if job["state"] in ("done", "error"):
+            return job
+        time.sleep(0.02)
+    raise AssertionError("job didn't finish")
+
+
+def test_api_restore_runs_as_a_job(api, service):
+    assert api.get("/api/cloud/vaults").status_code == 401
+    code, state = service.approve(api.post("/api/cloud/connect").json()["authorize_url"])
+    api.get("/api/cloud/callback", params={"code": code, "state": state})
+    notes = config.vault_dir()
+    notes.mkdir(parents=True, exist_ok=True)
+    (notes / "Facts.md").write_text("The gate opens at dawn.\n")
+    assert wait_job(api.post("/api/cloud/backup").json()["id"])["state"] == "done"
+    (notes / "Facts.md").unlink()
+    (vault_id,) = [v["id"] for v in api.get("/api/cloud/vaults").json()]
+    assert api.post("/api/cloud/restore", json={"vault_id": "not-an-id"}).status_code == 422
+    job = wait_job(api.post("/api/cloud/restore", json={"vault_id": vault_id}).json()["id"])
+    assert job["state"] == "done", job["message"]
+    assert job["message"].startswith("Restored 1 files")
+    assert (notes / "Facts.md").read_text() == "The gate opens at dawn.\n"
+
+
+def test_api_options_turn_automatic_backups_off(api):
+    status = api.put("/api/cloud/options", json={"auto_backup": False}).json()
+    assert (status["auto_backup"], status["include_transcripts"]) == (False, False)

@@ -146,13 +146,24 @@ export interface CloudBackup {
   unchanged: boolean
   skipped: string[] /* "path: why", at most 50 */
   quota: { used_bytes: number; limit_bytes: number; after_bytes: number }
+  fingerprint: string
 }
 export interface CloudStatus {
   url: string
   connected: boolean
   campaign: string /* the campaign the settings below belong to */
   include_transcripts: boolean
+  auto_backup: boolean /* back up by itself a couple of minutes after notes change */
   last_backup: CloudBackup | null
+  last_error: { at: number; message: string } | null /* the last backup failed; cleared by a good one */
+}
+/** A campaign in Bard Cloud (backed up from any Mac), to restore from. */
+export interface CloudVault {
+  id: string
+  name: string
+  bard_campaign_id: string
+  head_snapshot: string | null
+  created_at: string
 }
 
 /* ---- Campaign memory (an Obsidian vault of notes) ---- */
@@ -195,7 +206,7 @@ export interface CampaignAnswer {
 }
 export interface CampaignJob {
   id: string
-  kind: "import" | "writeup" | "improve" | "spelling" | "backup"
+  kind: "import" | "writeup" | "improve" | "spelling" | "backup" | "restore"
   title: string /* notes title, or the session id for a write-up / improve */
   state: "queued" | "running" | "done" | "error"
   done: number

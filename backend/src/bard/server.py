@@ -26,7 +26,7 @@ from . import config, improve, mics, obsidian, transcript
 from .ask import Asker
 from .audio import list_mics
 from .campaign import TYPES, Vault
-from .cloud import Cloud, CloudError
+from .cloud import AutoBackup, Cloud, CloudError
 from .engine import OVERFLOW, SESSION_ID, Bus, Engine, sample_path, session_audio
 from .memory import Memory, spelling_suggestions
 
@@ -56,7 +56,9 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", config.HOST}
 async def lifespan(app: FastAPI):
     bus.loop = asyncio.get_running_loop()
     engine.start_background()
+    auto_backup.start()  # does nothing until the user connects Bard Cloud
     yield
+    auto_backup.stop()
     engine.shutdown()
 
 
@@ -224,7 +226,12 @@ class AskIn(BaseModel):
 
 
 class CloudOptionsIn(BaseModel):
-    include_transcripts: bool
+    include_transcripts: bool | None = None
+    auto_backup: bool | None = None
+
+
+class CloudRestoreIn(BaseModel):
+    vault_id: str = Field(pattern=r"^[0-9a-f-]{36}$")
 
 
 def _call(fn, *args, **kwargs):
@@ -542,7 +549,7 @@ def _cloud_page(title: str, text: str) -> str:
     return (
         f"<!doctype html><meta charset=utf-8><title>Bard Cloud: {html.escape(title)}</title>"
         f'<body style="font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem">'
-        f"<h1>{html.escape(title)}</h1><p>{html.escape(text)}</p>"
+        f'<h1>{html.escape(title)}</h1><p>{html.escape(text)}</p><p><a href="/campaign">Back to Bard</a></p>'
     )
 
 
@@ -557,35 +564,90 @@ def cloud_disconnect():
 
 @app.put("/api/cloud/options")
 def cloud_options(body: CloudOptionsIn):
-    cloud.set_include_transcripts(engine.campaign, body.include_transcripts)
+    cloud.set_options(engine.campaign, include_transcripts=body.include_transcripts, auto_backup=body.auto_backup)
     return _cloud_status()
+
+
+def _job_progress(job):
+    def progress(done: int, total: int, message: str) -> None:
+        job.done, job.total, job.message = done, total, message
+        memory.emit(job)
+
+    return progress
+
+
+def _submit_backup(cid: str, name: str, root, automatic: bool = False):
+    """Queue a backup job (callers hold campaign_gate, so the campaign can't switch underneath)."""
+
+    def work(job):
+        try:
+            last = cloud.backup(cid, name, root, _job_progress(job))
+        finally:
+            bus.emit("cloud.updated", cloud.status(cid) | {"campaign": cid})
+        job.done = job.total
+        if last["unchanged"]:
+            job.message = f"Nothing changed since the last backup ({last['files']} files)"
+        else:
+            job.message = f"Backed up {last['files']} files ({last['uploaded']} new or changed)"
+        if last["skipped"]:
+            job.message += f"; skipped {len(last['skipped'])}"
+
+    return memory.submit("backup", f"{name} (automatic)" if automatic else name, work)
+
+
+def _open_campaign() -> tuple[str, str, object]:
+    with engine.lock:
+        return engine.campaign, engine.campaigns[engine.campaign].name, engine.vault_dir()
 
 
 @app.post("/api/cloud/backup")
 def cloud_backup():
     """Back up the open campaign's notes now (a background job: `campaign.job` with kind "backup")."""
     with campaign_gate:
-        with engine.lock:
-            cid, name, root = engine.campaign, engine.campaigns[engine.campaign].name, engine.vault_dir()
+        cid, name, root = _open_campaign()
+        if not cloud.status(cid)["connected"]:
+            raise HTTPException(400, "Connect Bard Cloud first.")
+        return _submit_backup(cid, name, root).to_json()
+
+
+@app.get("/api/cloud/vaults")
+def cloud_vaults():
+    """This account's campaigns in Bard Cloud (from any Mac), to restore from."""
+    try:
+        return cloud.vaults()
+    except CloudError as e:
+        raise HTTPException(401 if e.code == "unauthorized" else 502, str(e)) from None
+
+
+@app.post("/api/cloud/restore")
+def cloud_restore(body: CloudRestoreIn):
+    """Bring a backed-up campaign's newest snapshot into the open campaign's notes (a background job, kind
+    "restore"). Notes that differ go to .trash first; nothing is deleted."""
+    with campaign_gate:
+        cid, name, root = _open_campaign()
         if not cloud.status(cid)["connected"]:
             raise HTTPException(400, "Connect Bard Cloud first.")
 
         def work(job):
-            def progress(done: int, total: int, message: str) -> None:
-                job.done, job.total, job.message = done, total, message
-                memory.emit(job)
-
-            last = cloud.backup(cid, name, root, progress)
+            result = cloud.restore(body.vault_id, root, _job_progress(job))
             job.done = job.total
-            if last["unchanged"]:
-                job.message = f"Nothing changed since the last backup ({last['files']} files)"
-            else:
-                job.message = f"Backed up {last['files']} files ({last['uploaded']} new or changed)"
-            if last["skipped"]:
-                job.message += f"; skipped {len(last['skipped'])}"
-            bus.emit("cloud.updated", cloud.status(cid) | {"campaign": cid})
+            job.message = (
+                f"Restored {result['restored']} files"
+                + (f", {result['replaced']} older versions moved to .trash" if result["replaced"] else "")
+                + (f"; {result['unchanged']} already up to date" if result["unchanged"] else "")
+                + (f"; skipped {len(result['skipped'])}" if result["skipped"] else "")
+            )
 
-        return memory.submit("backup", name, work).to_json()
+        return memory.submit("restore", name, work).to_json()
+
+
+def _auto_backup_tick_submit(cid: str, name: str, root) -> None:
+    with campaign_gate:
+        if engine.campaign == cid:  # still the open campaign
+            _submit_backup(cid, name, root, automatic=True)
+
+
+auto_backup = AutoBackup(cloud, current=_open_campaign, busy=memory.busy, submit=_auto_backup_tick_submit)
 
 
 @app.get("/api/sources")

@@ -38,8 +38,12 @@ export const cloudActions = {
     })
   },
   disconnect: () => run(async () => set({ status: await api.cloudDisconnect() })),
-  setIncludeTranscripts: (on: boolean) => run(async () => set({ status: await api.cloudOptions(on) })),
+  setOptions: (options: { include_transcripts?: boolean; auto_backup?: boolean }) =>
+    run(async () => set({ status: await api.cloudOptions(options) })),
   backup: () => run(async () => campaignActions.putJob(await api.cloudBackup())),
+  /** Campaigns in Bard Cloud to restore from; undefined if the service couldn't be reached (toasted). */
+  vaults: () => run(() => api.cloudVaults()),
+  restore: (vaultId: string) => run(async () => campaignActions.putJob(await api.cloudRestore(vaultId))),
 }
 
 export function applyCloudEvent(ev: { type: "cloud.updated"; data: CloudStatus }) {

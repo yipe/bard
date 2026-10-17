@@ -1,7 +1,8 @@
 """Bard Cloud: an optional, opt-in backup of the open campaign's vault, readable later in a browser.
 
 Nothing here touches the network until the user clicks Connect. The service (a separate project) keeps
-snapshots of the vault's files; this module only reads the vault and never changes it.
+snapshots of the vault's files. A backup only reads the vault; only a restore, which the user starts, writes
+to it (and moves what it replaces to `.trash/`). Automatic backups (`AutoBackup`) follow notes as they change.
 
 Sign-in is OAuth 2 with PKCE and a loopback redirect to this server (`/api/cloud/callback`); the service
 says where to sign in (`GET /api/v1/client`). Tokens live in `data/cloud.json` (mode 600).
@@ -17,10 +18,11 @@ import json
 import logging
 import os
 import secrets
+import stat
 import threading
 import time
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -81,41 +83,81 @@ def path_problem(path: str) -> str | None:
     return None
 
 
-def scan(root: Path, include_transcripts: bool) -> tuple[list[dict], dict[str, Path], list[str]]:
-    """The vault's files as a manifest ({path, sha256, size}), where each hash's bytes live, and the
-    files left out with why. Hidden folders (.obsidian, .trash) and symlinks are never followed."""
-    files: list[dict] = []
-    where: dict[str, Path] = {}
-    skipped: list[str] = []
-    by_lower: dict[str, str] = {}
+def _vault_files(root: Path, include_transcripts: bool) -> Iterator[tuple[Path, str, os.stat_result]]:
+    """(file, vault-relative NFC path, stat) for every regular file a backup considers. Hidden files and
+    folders (.obsidian, .trash, temp files) and symlinks are never followed."""
     if not root.is_dir():
-        return files, where, skipped
+        return
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         dirnames[:] = sorted(d for d in dirnames if not d.startswith("."))
         for name in sorted(filenames):
             full = Path(dirpath) / name
-            if name.startswith(".") or full.is_symlink() or not full.is_file():
+            if name.startswith(".") or full.is_symlink():
                 continue
             rel = unicodedata.normalize("NFC", full.relative_to(root).as_posix())
             if rel.startswith(TRANSCRIPTS) and not include_transcripts:
                 continue
-            problem = path_problem(rel)
-            size = full.stat().st_size
-            if problem is None and size > MAX_FILE_BYTES:
-                problem = f"larger than {MAX_FILE_BYTES // (1024 * 1024)} MB"
-            if problem is None and rel.lower() in by_lower:
-                problem = f"differs only in case from {by_lower[rel.lower()]}"
-            if problem is None and len(files) >= MAX_FILES:
-                problem = f"more than {MAX_FILES} files"
-            if problem:
-                skipped.append(f"{rel}: {problem}")
+            try:
+                st = full.stat()
+            except OSError:
+                continue  # deleted while we looked
+            if stat.S_ISREG(st.st_mode):
+                yield full, rel, st
+
+
+def fingerprint(root: Path, include_transcripts: bool) -> str:
+    """Changes when any backed-up file is added, removed, resized or touched; stats only, no reading."""
+    h = hashlib.sha256()
+    for _, rel, st in _vault_files(root, include_transcripts):
+        h.update(f"{rel}\0{st.st_size}\0{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()
+
+
+def scan(
+    root: Path, include_transcripts: bool, cache: dict[Path, tuple[int, int, str]] | None = None
+) -> tuple[list[dict], dict[str, Path], list[str]]:
+    """The vault's files as a manifest ({path, sha256, size}), where each hash's bytes live, and the
+    files left out with why. `cache` (file → size, mtime, sha256) skips re-reading unchanged files."""
+    files: list[dict] = []
+    where: dict[str, Path] = {}
+    skipped: list[str] = []
+    by_lower: dict[str, str] = {}
+    for full, rel, st in _vault_files(root, include_transcripts):
+        problem = path_problem(rel)
+        if problem is None and st.st_size > MAX_FILE_BYTES:
+            problem = f"larger than {MAX_FILE_BYTES // (1024 * 1024)} MB"
+        if problem is None and rel.lower() in by_lower:
+            problem = f"differs only in case from {by_lower[rel.lower()]}"
+        if problem is None and len(files) >= MAX_FILES:
+            problem = f"more than {MAX_FILES} files"
+        if problem:
+            skipped.append(f"{rel}: {problem}")
+            continue
+        known = cache.get(full) if cache is not None else None
+        if known and known[:2] == (st.st_size, st.st_mtime_ns):
+            size, sha = st.st_size, known[2]
+        else:
+            try:
+                data = full.read_bytes()
+            except OSError:
                 continue
-            data = full.read_bytes()
-            sha = hashlib.sha256(data).hexdigest()
-            by_lower[rel.lower()] = rel
-            files.append({"path": rel, "sha256": sha, "size": len(data)})
-            where[sha] = full
+            if len(data) > MAX_FILE_BYTES:  # grew since stat
+                skipped.append(f"{rel}: larger than {MAX_FILE_BYTES // (1024 * 1024)} MB")
+                continue
+            size, sha = len(data), hashlib.sha256(data).hexdigest()
+            if cache is not None and len(data) == st.st_size:
+                cache[full] = (st.st_size, st.st_mtime_ns, sha)
+        by_lower[rel.lower()] = rel
+        files.append({"path": rel, "sha256": sha, "size": size})
+        where[sha] = full
     return files, where, skipped
+
+
+def _inside(target: Path, root: Path) -> bool:
+    """`target` lands inside `root` even after following symlinked folders on the way."""
+    real_root = root.resolve()
+    real = target.parent.resolve() / target.name
+    return real_root == real.parent or real_root in real.parents
 
 
 class Cloud:
@@ -130,6 +172,7 @@ class Cloud:
         self.http = http or httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0), follow_redirects=False)
         self._lock = threading.Lock()
         self._pending: dict[str, tuple[str, dict, float]] = {}  # state -> (verifier, client config, started)
+        self._hashes: dict[Path, tuple[int, int, str]] = {}  # file -> (size, mtime_ns, sha256), for scan()
 
     # ---------------------------------------------------------------- stored state
 
@@ -158,11 +201,17 @@ class Cloud:
             self._save(data)
             return data
 
-    def campaign_settings(self, campaign_id: str) -> dict:
-        return {"include_transcripts": False, "last_backup": None} | self._load().get("campaigns", {}).get(campaign_id, {})
+    DEFAULTS = {"include_transcripts": False, "auto_backup": True, "last_backup": None, "last_error": None}
 
-    def set_include_transcripts(self, campaign_id: str, on: bool) -> dict:
-        self._update(lambda d: d.setdefault("campaigns", {}).setdefault(campaign_id, {}).update(include_transcripts=on))
+    def campaign_settings(self, campaign_id: str) -> dict:
+        return self.DEFAULTS | self._load().get("campaigns", {}).get(campaign_id, {})
+
+    def _set(self, campaign_id: str, **values) -> None:
+        self._update(lambda d: d.setdefault("campaigns", {}).setdefault(campaign_id, {}).update(values))
+
+    def set_options(self, campaign_id: str, include_transcripts: bool | None = None, auto_backup: bool | None = None) -> dict:
+        options = {"include_transcripts": include_transcripts, "auto_backup": auto_backup}
+        self._set(campaign_id, **{k: v for k, v in options.items() if v is not None})
         return self.campaign_settings(campaign_id)
 
     def status(self, campaign_id: str) -> dict:
@@ -186,10 +235,15 @@ class Cloud:
         r = self._request("GET", f"{self.url}/api/v1/client")
         if r.status_code != 200:
             raise CloudError("internal", f"Bard Cloud sign-in isn't available ({r.status_code}).")
-        client = r.json()
+        client = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+        fields = ("authorize_url", "token_url", "client_id", "redirect_uri")
+        if not all(isinstance(client.get(k), str) for k in fields) or not isinstance(client.get("scopes"), list):
+            raise CloudError("internal", "Bard Cloud's sign-in settings don't look right.")
+        if not all(client[k].startswith("https://") for k in ("authorize_url", "token_url")):
+            raise CloudError("internal", "Bard Cloud's sign-in must use HTTPS.")
         expected = f"http://127.0.0.1:{config.PORT}/api/cloud/callback"
-        if client.get("redirect_uri") != expected:
-            raise ValueError(f"Bard Cloud signs in back to {client.get('redirect_uri')}; this Bard runs at {expected}.")
+        if client["redirect_uri"] != expected:
+            raise ValueError(f"Bard Cloud signs in back to {client['redirect_uri']}; this Bard runs at {expected}.")
         verifier = secrets.token_urlsafe(64)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
         state = secrets.token_urlsafe(24)
@@ -289,19 +343,29 @@ class Cloud:
         raise CloudError(error.get("code", "internal"), error.get("message", f"Bard Cloud said {r.status_code}."), error)
 
     def backup(self, campaign_id: str, name: str, root: Path, progress: Callable[[int, int, str], None]) -> dict:
-        """Push the vault as a new snapshot (or nothing, if it hasn't changed). Runs on a job thread."""
+        """Push the vault as a new snapshot (or nothing, if it hasn't changed). Runs on a job thread.
+        A failure is remembered (`last_error`) until the next backup succeeds."""
         try:
-            return self._push(campaign_id, name, root, progress)
-        except CloudError as e:
-            # Another Mac pushed, a note changed mid-way, or an upload went missing: start over once.
-            if e.code not in ("conflict", "missing_blobs", "changed", "upload"):
-                raise
-            log.info("cloud backup: retrying after %s", e.code)
-            return self._push(campaign_id, name, root, progress)
+            try:
+                last = self._push(campaign_id, name, root, progress)
+            except CloudError as e:
+                # Another Mac pushed, a note changed mid-way, or an upload went missing: start over once.
+                if e.code not in ("conflict", "missing_blobs", "changed", "upload"):
+                    raise
+                log.info("cloud backup: retrying after %s", e.code)
+                last = self._push(campaign_id, name, root, progress)
+        except Exception as e:
+            self._set(campaign_id, last_error={"at": time.time(), "message": str(e) or type(e).__name__})
+            raise
+        self._set(campaign_id, last_backup=last, last_error=None)
+        return last
 
     def _push(self, campaign_id: str, name: str, root: Path, progress: Callable[[int, int, str], None]) -> dict:
         progress(0, 0, "Reading the notes")
-        files, where, skipped = scan(root, self.campaign_settings(campaign_id)["include_transcripts"])
+        include = self.campaign_settings(campaign_id)["include_transcripts"]
+        # Taken before reading: an edit made during the backup changes it, so a later backup picks the edit up.
+        before = fingerprint(root, include)
+        files, where, skipped = scan(root, include, self._hashes)
         vault = self._api("POST", "/vaults", {"name": name.strip()[:100] or "Campaign", "bard_campaign_id": campaign_id})
         base = vault["head_snapshot"]
         plan = self._api("POST", f"/vaults/{vault['id']}/plan", {"base_snapshot": base, "files": files})
@@ -317,7 +381,7 @@ class Cloud:
         progress(len(uploads), len(uploads) + 1, "Saving the snapshot")
         result = self._api("POST", f"/vaults/{vault['id']}/commit", {"base_snapshot": base, "files": files})
         snapshot = result["snapshot"]
-        last = {
+        return {
             "at": time.time(),
             "snapshot": snapshot["id"],
             "files": snapshot["file_count"],
@@ -326,6 +390,134 @@ class Cloud:
             "unchanged": result["unchanged"],
             "skipped": skipped[:50],
             "quota": plan["quota"],
+            "fingerprint": before,
         }
-        self._update(lambda d: d.setdefault("campaigns", {}).setdefault(campaign_id, {}).update(last_backup=last))
-        return last
+
+    # ---------------------------------------------------------------- restore
+
+    def vaults(self) -> list[dict]:
+        """The campaigns this account has in Bard Cloud (any Mac's)."""
+        result = self._api("GET", "/vaults")
+        return result if isinstance(result, list) else []
+
+    def restore(self, vault_id: str, root: Path, progress: Callable[[int, int, str], None]) -> dict:
+        """Bring a vault's newest snapshot back into `root`. Notes that differ are replaced and their current
+        versions moved to `.trash/`; notes the snapshot doesn't have are left alone (a restore never deletes).
+        Every file is checked against its sha256 before it's written. Runs on a job thread."""
+        progress(0, 0, "Finding the newest backup")
+        vault = next((v for v in self.vaults() if v.get("id") == vault_id), None)
+        if vault is None:
+            raise CloudError("not_found", "That campaign isn't in Bard Cloud.")
+        if not vault.get("head_snapshot"):
+            raise CloudError("not_found", "That campaign hasn't been backed up yet.")
+        listing = self._api("GET", f"/vaults/{vault_id}/snapshots/{vault['head_snapshot']}")
+        files = listing["files"]
+        root.mkdir(parents=True, exist_ok=True)
+        trash = root / ".trash" / f"Before restore {time.strftime('%Y-%m-%d %H%M%S')}"
+        counts = {"restored": 0, "unchanged": 0, "replaced": 0}
+        skipped: list[str] = []
+        for i, f in enumerate(files):
+            progress(i, len(files), f"Restoring {len(files)} files")
+            path = f.get("path", "")
+            problem = path_problem(path) if isinstance(path, str) else "not a path"
+            target = root / path
+            if problem is None and (not _inside(target, root) or target.is_symlink()):
+                problem = "would land outside the campaign folder"
+            if problem:
+                skipped.append(f"{path}: {problem}")
+                continue
+            if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == f["sha256"]:
+                counts["unchanged"] += 1
+                continue
+            data = self._download(f["url"], f["size"])
+            if hashlib.sha256(data).hexdigest() != f["sha256"]:
+                raise CloudError("integrity", f"{path} didn't arrive intact; nothing more was restored.")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                kept = trash / path
+                kept.parent.mkdir(parents=True, exist_ok=True)
+                target.replace(kept)
+                counts["replaced"] += 1
+            tmp = target.with_name(f".{target.name}.restore.tmp")
+            tmp.write_bytes(data)
+            tmp.replace(target)
+            counts["restored"] += 1
+        return {**counts, "files": len(files), "snapshot": listing["snapshot"]["id"], "skipped": skipped[:50]}
+
+    def _download(self, url: str, size: int) -> bytes:
+        """At most `size` bytes from a signed URL (the service says how big each file is)."""
+        if not isinstance(url, str) or not url.startswith("https://"):
+            raise CloudError("integrity", "Bard Cloud sent a download link that isn't HTTPS.")
+        try:
+            with self.http.stream("GET", url) as r:
+                if not r.is_success:
+                    raise CloudError("download", f"A download failed ({r.status_code}).")
+                data = bytearray()
+                for chunk in r.iter_bytes():
+                    data += chunk
+                    if len(data) > size:
+                        raise CloudError("integrity", "A download was larger than it should be.")
+                return bytes(data)
+        except httpx.HTTPError as e:
+            raise CloudError("network", f"Couldn't reach Bard Cloud ({type(e).__name__}).") from None
+
+
+class AutoBackup:
+    """Backs up the open campaign on its own: once its notes have changed and then stayed still for
+    QUIET_S, at most every MIN_GAP_S, only while connected and the campaign has it on. `tick()` decides;
+    `run()` calls it every CHECK_S on a thread."""
+
+    CHECK_S = 30
+    QUIET_S = 120
+    MIN_GAP_S = 600
+
+    def __init__(
+        self,
+        cloud: Cloud,
+        current: Callable[[], tuple[str, str, Path]],
+        busy: Callable[[], bool],
+        submit: Callable[[str, str, Path], None],
+        clock: Callable[[], float] = time.monotonic,
+    ):
+        self.cloud, self.current, self.busy, self.submit, self.clock = cloud, current, busy, submit, clock
+        self._seen: dict[str, tuple[str, float]] = {}  # campaign -> (fingerprint, when first seen)
+        self._attempted: dict[str, float] = {}  # campaign -> last automatic backup started
+        self._stop = threading.Event()
+
+    def tick(self) -> bool:
+        """Start a backup if one is due; True when it did."""
+        cid, name, root = self.current()
+        status = self.cloud.status(cid)
+        if not (status["connected"] and status["auto_backup"]):
+            self._seen.pop(cid, None)
+            return False
+        now = self.clock()
+        fp = fingerprint(root, status["include_transcripts"])
+        if fp == (status["last_backup"] or {}).get("fingerprint"):
+            return False  # backed up as it is now
+        seen = self._seen.get(cid)
+        if seen is None or seen[0] != fp:
+            self._seen[cid] = (fp, now)  # just changed: wait until it stays still
+            return False
+        if now - seen[1] < self.QUIET_S:
+            return False
+        if cid in self._attempted and now - self._attempted[cid] < self.MIN_GAP_S:
+            return False
+        if self.busy():
+            return False  # a write-up or import is running: it will change the notes anyway
+        self._attempted[cid] = now
+        self.submit(cid, name, root)
+        return True
+
+    def run(self) -> None:
+        while not self._stop.wait(self.CHECK_S):
+            try:
+                self.tick()
+            except Exception:
+                log.exception("automatic cloud backup check failed")
+
+    def start(self) -> None:
+        threading.Thread(target=self.run, name="cloud-auto-backup", daemon=True).start()
+
+    def stop(self) -> None:
+        self._stop.set()
