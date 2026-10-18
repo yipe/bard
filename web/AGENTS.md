@@ -12,7 +12,9 @@ Acceptance for any change: `pnpm typecheck && pnpm test && pnpm lint && pnpm exe
   `lib/campaignStore.ts`: campaign state + its **write queue**. `lib/record.ts`: saved records → view data.
 - `components/session/`: live view (`ChatFeed` virtualized with react-virtuoso, `PlayerGrid`,
   `VoicesPanel`). `components/history/`: saved sessions, read-only viewer, transcript tools.
-  `components/campaign/`: glossary, editor, import, suggestions, Ask. `components/transcript/`: rows shared by
+  `components/campaign/`: glossary, editor, import, suggestions, Ask. The entry editor opens in a non-modal
+  right-hand `Sheet` (selection lives in `campaignStore`, mirrored in the URL). `EntityPicker` is a fuzzy
+  `Command` combobox (aliases and heard-as spellings match). `components/transcript/`: rows shared by
   live and history views. `components/ui/`: shadcn primitives.
 - `test/`: `setup.ts`, `fixtures.ts` (builders), `mockFetch.ts`.
 
@@ -30,3 +32,6 @@ Acceptance for any change: `pnpm typecheck && pnpm test && pnpm lint && pnpm exe
 - Tests: Testing Library's `waitFor` (not `vi.waitFor` inside `act`); stub `fetch` with `mockFetch`;
   clear sonner toasts between tests. Every new behavior gets a test.
 - Use shadcn/ui primitives and Tailwind tokens; keep UI text short and plain.
+- Adding shadcn components: `pnpm dlx shadcn@latest add <name>` (without `--overwrite`). The CLI has
+  rewritten `cn` imports to a bogus `cn` npm package and reformatted existing files; check
+  `git diff` and keep imports as `@/lib/utils`.

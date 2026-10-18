@@ -157,6 +157,13 @@ export interface CloudStatus {
   last_backup: CloudBackup | null
   last_error: { at: number; message: string } | null /* the last backup failed; cleared by a good one */
 }
+/** Who is signed in to Troubadour Cloud (GET /api/cloud/account). `avatar` is a data: URL. */
+export interface CloudAccount {
+  email: string | null
+  name: string | null
+  avatar: string | null
+}
+
 /** A campaign in Troubadour Cloud (backed up from any Mac), to restore from. */
 export interface CloudVault {
   id: string

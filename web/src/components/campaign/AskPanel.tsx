@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { FileText, Loader2, MessageCircleQuestion, ScrollText, Send, User } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/api"
@@ -89,14 +90,12 @@ function AnswerCard({ answer: a, onRetry }: { answer: CampaignAnswer; onRetry: (
           <Loader2 className="size-4 animate-spin" /> {progress}
         </p>
       ) : a.state === "error" ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span role="alert" className="text-destructive">
-            Couldn't answer: {a.message}
-          </span>
+        <Alert variant="destructive" className="flex flex-wrap items-center gap-2">
+          <AlertDescription className="text-destructive">Couldn't answer: {a.message}</AlertDescription>
           <Button size="xs" variant="outline" onClick={onRetry}>
             Ask again
           </Button>
-        </div>
+        </Alert>
       ) : (
         <>
           <p className={a.found ? "text-sm whitespace-pre-line" : "text-sm text-muted-foreground"}>
@@ -116,20 +115,20 @@ function AnswerCard({ answer: a, onRetry }: { answer: CampaignAnswer; onRetry: (
 }
 
 function SourceRow({ source: s }: { source: AnswerSource }) {
-  const link = "text-primary hover:underline text-left"
+  const link = "h-auto p-0 text-left text-xs whitespace-normal"
   return (
     <li className="text-xs" title={s.excerpt}>
       <span className="mr-1.5 text-muted-foreground">[{s.id}]</span>
       {s.kind === "transcript" && s.session ? (
-        <button type="button" className={link} onClick={() => s.session && openSessionById(s.session)}>
-          <ScrollText className="mr-1 inline size-3" />
+        <Button variant="link" className={link} onClick={() => s.session && openSessionById(s.session)}>
+          <ScrollText />
           {s.label}
-        </button>
+        </Button>
       ) : s.kind === "entry" && s.entry ? (
-        <button type="button" className={link} onClick={() => campaignActions.select(s.entry)}>
-          <User className="mr-1 inline size-3" />
+        <Button variant="link" className={link} onClick={() => campaignActions.select(s.entry)}>
+          <User />
           {s.entry}
-        </button>
+        </Button>
       ) : s.path ? (
         <ObsidianLink relPath={s.path}>{s.label}</ObsidianLink>
       ) : (

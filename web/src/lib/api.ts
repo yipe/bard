@@ -2,6 +2,7 @@ import type {
   Campaign,
   CampaignAnswer,
   CampaignInfo,
+  CloudAccount,
   CloudStatus,
   CloudVault,
   Campaigns,
@@ -186,6 +187,8 @@ export const api = {
   cloudBackup: () => req<CampaignJob>("POST", "/api/cloud/backup"),
   /** This account's campaigns in Troubadour Cloud, from any Mac. */
   cloudVaults: () => req<CloudVault[]>("GET", "/api/cloud/vaults"),
-  /** Bring a backed-up campaign's newest notes into the open campaign (background job, kind "restore"). */
+  /** Who is signed in (name, email, avatar as a data: URL); the profile fields are null for an older sign-in. */
+  cloudAccount: () => req<CloudAccount>("GET", "/api/cloud/account"),
+  /** Bring a backed-up campaign's newest notes back, adding the campaign if this Mac lacks it (job "restore"). */
   cloudRestore: (vault_id: string) => req<CampaignJob>("POST", "/api/cloud/restore", { vault_id }),
 }

@@ -31,7 +31,7 @@ async function openPopover() {
 
 beforeEach(() => {
   useCampaign.setState(initialCampaign, true)
-  useCloud.setState({ status: null }, true)
+  useCloud.setState({ status: null, account: null }, true)
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -170,7 +170,7 @@ describe("Cloud backup", () => {
     await openPopover()
     fireEvent.click(screen.getByRole("button", { name: /Restore…/ }))
     await act(async () => {})
-    const select = screen.getByLabelText("Restore notes from") as HTMLSelectElement
+    const select = screen.getByLabelText("Restore campaign") as HTMLSelectElement
     expect(select.value).toBe("v-main")
     expect([...select.options].map((o) => o.textContent)).toEqual([
       "Old table",

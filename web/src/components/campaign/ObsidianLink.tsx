@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { ExternalLink } from "lucide-react"
+import { buttonVariants } from "@/components/ui/button"
 import { obsidianUrl } from "@/lib/campaign"
 import { useCampaign } from "@/lib/campaignStore"
 import { cn } from "@/lib/utils"
@@ -33,9 +34,9 @@ export function ObsidianLink({
   return (
     <a
       href={obsidianUrl(campaign.obsidian, relPath)}
-      className={cn("inline-flex items-center gap-1 text-primary hover:underline", className)}
+      className={cn(buttonVariants({ variant: "link", size: "xs" }), "h-auto p-0", className)}
     >
-      <ExternalLink className="size-3" /> {children}
+      <ExternalLink /> {children}
     </a>
   )
 }

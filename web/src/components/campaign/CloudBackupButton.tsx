@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { AlertCircle, Cloud, CloudOff, ExternalLink, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/native-select"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
@@ -12,7 +13,7 @@ import { useStore } from "@/lib/store"
 import { ago, when } from "@/lib/time"
 import type { CampaignJob, CloudStatus, CloudVault } from "@/lib/types"
 
-const running = (kind: CampaignJob["kind"]) => (s: { jobs: Record<string, CampaignJob> }) =>
+export const running = (kind: CampaignJob["kind"]) => (s: { jobs: Record<string, CampaignJob> }) =>
   Object.values(s.jobs).some((j) => j.kind === kind && jobActive(j))
 
 /** A failure newer than the last good backup; an older one is history, not news. */
@@ -112,9 +113,11 @@ function Connected({ status }: { status: CloudStatus }) {
           : "Not backed up yet."}
       </p>
       {failed && (
-        <p role="alert" className="text-xs text-destructive">
-          Backup failed {when(failed.at)}: {failed.message}
-        </p>
+        <Alert variant="destructive" className="px-2 py-1.5">
+          <AlertDescription className="text-xs text-destructive">
+            Backup failed {when(failed.at)}: {failed.message}
+          </AlertDescription>
+        </Alert>
       )}
       {last && last.skipped.length > 0 && (
         <details className="text-xs text-muted-foreground">
@@ -150,19 +153,20 @@ function Connected({ status }: { status: CloudStatus }) {
           href={`${status.url}/vaults`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          className={buttonVariants({ variant: "link", size: "xs" })}
         >
-          <ExternalLink className="size-3" /> Open Troubadour Cloud
+          <ExternalLink /> Open Troubadour Cloud
         </a>
       </div>
       <Restore campaign={status.campaign} />
-      <button
-        type="button"
-        className="text-xs text-muted-foreground hover:underline"
+      <Button
+        size="xs"
+        variant="ghost"
+        className="text-muted-foreground"
         onClick={() => void cloudActions.disconnect()}
       >
-        Disconnect this Mac
-      </button>
+        Disconnect
+      </Button>
     </>
   )
 }
@@ -185,7 +189,7 @@ function Option(props: {
   )
 }
 
-/** Bring a backed-up campaign (this one by default, or one from another Mac) into this campaign's notes. */
+/** Bring a backed-up campaign back: this one by default, or one from another Mac (it joins the campaign picker). */
 function Restore({ campaign }: { campaign: string }) {
   const restoring = useCampaign(running("restore"))
   const [vaults, setVaults] = useState<CloudVault[] | null>(null)
@@ -213,7 +217,7 @@ function Restore({ campaign }: { campaign: string }) {
   return (
     <div className="space-y-2 rounded-md border p-2">
       <Label htmlFor="cloud-restore-from" className="text-xs">
-        Restore notes from
+        Restore campaign
       </Label>
       <NativeSelect id="cloud-restore-from" value={chosen} onChange={(e) => setChosen(e.target.value)}>
         {vaults.map((v) => (
@@ -224,8 +228,9 @@ function Restore({ campaign }: { campaign: string }) {
         ))}
       </NativeSelect>
       <p className="text-xs text-muted-foreground">
-        Its newest backup comes back into this campaign's notes. Notes that differ are replaced, and their
-        current versions are kept in the vault's .trash folder. Nothing is deleted.
+        Its newest backup comes back. A campaign this Mac doesn't have yet is added to the campaign picker.
+        Notes that differ are replaced, and their current versions are kept in the vault's .trash folder.
+        Nothing is deleted.
       </p>
       <div className="flex gap-2">
         <Button

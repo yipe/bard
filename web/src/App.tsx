@@ -1,10 +1,12 @@
 import { useEffect } from "react"
 import { Feather, TriangleAlert } from "lucide-react"
+import { AccountMenu } from "@/components/AccountMenu"
 import { CampaignSwitcher } from "@/components/CampaignSwitcher"
 import { CampaignView } from "@/components/campaign/CampaignView"
 import { HistoryView } from "@/components/history/HistoryView"
 import { SessionView } from "@/components/session/SessionView"
 import { SetupView } from "@/components/setup/SetupView"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { startRouting } from "@/lib/route"
@@ -42,6 +44,7 @@ export default function App() {
                 key={t.id}
                 type="button"
                 onClick={() => actions.setView(t.id)}
+                aria-current={view === t.id ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors",
                   view === t.id ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
@@ -61,15 +64,13 @@ export default function App() {
             />
             {connected ? "Connected" : "Connecting…"}
           </div>
+          {loaded && <AccountMenu />}
         </header>
         {serverError && (
-          <div
-            role="alert"
-            className="flex items-center gap-2 bg-destructive/90 px-4 py-2 text-sm text-white"
-          >
-            <TriangleAlert className="size-4 shrink-0" />
-            <span>{serverError}</span>
-          </div>
+          <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 px-4">
+            <TriangleAlert />
+            <AlertDescription className="text-destructive">{serverError}</AlertDescription>
+          </Alert>
         )}
         {!loaded ? (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">

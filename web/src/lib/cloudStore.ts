@@ -2,10 +2,16 @@ import { create } from "zustand"
 import { toast } from "sonner"
 import { api } from "./api"
 import { campaignActions } from "./campaignStore"
-import type { CloudStatus } from "./types"
+import type { CloudAccount, CloudStatus } from "./types"
 
-/** Troubadour Cloud backup status for the open campaign; from GET /api/cloud and `cloud.updated` events. */
-export const useCloud = create<{ status: CloudStatus | null }>(() => ({ status: null }))
+/**
+ * Troubadour Cloud backup status for the open campaign; from GET /api/cloud and `cloud.updated` events.
+ * `account` is who is signed in (the header's avatar menu); null until loaded or when not connected.
+ */
+export const useCloud = create<{ status: CloudStatus | null; account: CloudAccount | null }>(() => ({
+  status: null,
+  account: null,
+}))
 
 const set = useCloud.setState
 
@@ -24,6 +30,15 @@ export const cloudActions = {
     const load = async () => set({ status: await api.cloud() })
     return quiet ? load().catch(() => undefined) : run(load)
   },
+  /** Who is signed in, for the header menu. Quiet: with no account the menu just shows initials. */
+  loadAccount: async () => {
+    try {
+      set({ account: await api.cloudAccount() })
+    } catch {
+      set({ account: null })
+    }
+  },
+
   /** Opens the service's sign-in page in a new tab; it comes back to Troubadour, which sends `cloud.updated`.
    * The tab opens during the click (after an await, browsers block pop-ups) and loses its opener, so
    * the sign-in page can't reach back into Troubadour's tab. */

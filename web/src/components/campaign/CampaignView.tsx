@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { BookOpen, Loader2, MessageCircleQuestion, Upload } from "lucide-react"
+import { BookOpen, Loader2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { jobActive } from "@/lib/campaign"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { TYPE_LABEL, jobActive } from "@/lib/campaign"
 import { campaignActions, useCampaign } from "@/lib/campaignStore"
 import { AskPanel } from "./AskPanel"
 import { CloudBackupButton } from "./CloudBackupButton"
@@ -68,11 +69,6 @@ export function CampaignView() {
           ))}
         </div>
         <div className="ml-auto flex gap-2">
-          {entity && (
-            <Button size="sm" variant="outline" onClick={() => campaignActions.select(null)}>
-              <MessageCircleQuestion /> Ask
-            </Button>
-          )}
           <CloudBackupButton />
           <Button size="sm" onClick={() => setImporting(true)}>
             <Upload /> Import notes
@@ -87,24 +83,40 @@ export function CampaignView() {
           <CampaignFacts facts={campaign.facts} />
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto p-6">
-          {entity ? (
-            <div className="mx-auto max-w-2xl">
-              <EntityEditor key={entity.name} entity={entity} />
+          <div className="mx-auto max-w-2xl space-y-8">
+            <AskPanel />
+            <div className="space-y-2 text-center text-sm text-muted-foreground">
+              <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
+              <p className="text-xs">
+                Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Troubadour
+                spell them right in new transcripts; entries marked for review were suggested by the AI.
+              </p>
             </div>
-          ) : (
-            <div className="mx-auto max-w-2xl space-y-8">
-              <AskPanel />
-              <div className="space-y-2 text-center text-sm text-muted-foreground">
-                <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
-                <p className="text-xs">
-                  Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Troubadour
-                  spell them right in new transcripts; entries marked for review were suggested by the AI.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
         </main>
       </div>
+
+      {/* Non-modal: the glossary stays clickable, so picking another entry swaps the sheet's content. */}
+      <Sheet
+        open={!!entity}
+        onOpenChange={(open) => !open && campaignActions.select(null)}
+        modal={false}
+        disablePointerDismissal
+      >
+        <SheetContent showOverlay={false} className="w-full data-[side=right]:sm:max-w-xl">
+          {entity && (
+            <>
+              <SheetHeader className="pr-12">
+                <SheetTitle>{entity.name}</SheetTitle>
+                <SheetDescription>{TYPE_LABEL[entity.type]} in your glossary</SheetDescription>
+              </SheetHeader>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+                <EntityEditor key={entity.name} entity={entity} />
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <ImportDialog open={importing} onOpenChange={setImporting} />
     </div>

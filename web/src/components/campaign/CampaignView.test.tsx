@@ -209,6 +209,20 @@ describe("glossary list", () => {
 })
 
 describe("entry editor", () => {
+  it("opens the entry in a side sheet, keeps the glossary clickable, and Close deselects", async () => {
+    server()
+    await renderView()
+    expect(screen.queryByRole("dialog")).toBeNull()
+    await open("Elara")
+    expect(screen.getByRole("dialog", { name: "Elara" })).toBeInTheDocument()
+    await open("Tarsis") // the glossary isn't blocked while the sheet is open
+    expect(screen.getByRole("dialog", { name: "Tarsis" })).toBeInTheDocument()
+    expect(useCampaign.getState().selected).toBe("Tarsis")
+    fireEvent.click(screen.getByRole("button", { name: "Close" }))
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    expect(useCampaign.getState().selected).toBeNull()
+  })
+
   it("renames via PATCH {name} and keeps the entry selected", async () => {
     const { writes } = server()
     await renderView()
@@ -490,7 +504,8 @@ describe("entry editor", () => {
     )
     await renderView()
     await open("Fireball")
-    fireEvent.change(screen.getByRole("combobox", { name: "Merge into" }), { target: { value: "Elara" } })
+    fireEvent.click(screen.getByRole("combobox", { name: "Merge into" }))
+    fireEvent.click(screen.getByRole("option", { name: /Elara/ }))
     fireEvent.click(screen.getByRole("button", { name: /Merge into…/ }))
     fireEvent.click(screen.getByRole("button", { name: "Confirm merge" }))
     await flush()
@@ -646,12 +661,31 @@ describe("suggestions", () => {
     await renderView()
     const row = within(document.querySelector<HTMLElement>('[data-suggestion="Olly"]')!)
     fireEvent.click(row.getByRole("button", { name: /misspelling of/ }))
-    fireEvent.change(row.getByRole("combobox"), { target: { value: "Elara" } })
+    fireEvent.click(row.getByRole("combobox"))
+    fireEvent.click(screen.getByRole("option", { name: /Elara/ }))
     fireEvent.click(row.getByRole("button", { name: "Confirm" }))
     await flush()
     expect(writes()).toEqual([
       { method: "PATCH", url: "/api/campaign/entities/Elara", body: { heard_as: ["Dilara", "Olly"] } },
     ])
+  })
+
+  it("the entry picker filters fuzzily, and by alias or heard-as spelling", async () => {
+    server()
+    await renderView()
+    await open("Fireball")
+    fireEvent.click(screen.getByRole("combobox", { name: "Merge into" }))
+    const search = screen.getByRole("combobox", { name: "Search: Merge into" })
+    const names = () =>
+      within(screen.getByRole("listbox"))
+        .queryAllByRole("option")
+        .map((o) => o.textContent)
+    fireEvent.change(search, { target: { value: "trss" } })
+    expect(names()).toEqual(["TarsisPlace"])
+    fireEvent.change(search, { target: { value: "Dilara" } }) // a heard-as spelling of Elara
+    expect(names()).toEqual(["ElaraNPC"])
+    fireEvent.change(search, { target: { value: "zzzz" } })
+    expect(screen.getByText("No matching entry.")).toBeInTheDocument()
   })
 })
 
