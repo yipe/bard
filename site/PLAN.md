@@ -137,6 +137,8 @@ vercel deploy --prod --yes
 vercel domains add troubadour.5eapps.com troubadour-site
 ```
 
+This file isn't deployed (`site/.vercelignore`).
+
 Since 2026-10-18 the project is connected to GitHub (`yipe/troubadour`, Root Directory `site`, production branch
 `main`): a push to `main` deploys it, and an ignored-build command skips pushes that don't touch `site/`. The
 commands above are only for first setup or an emergency deploy.
