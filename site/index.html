@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bard: live transcripts and a campaign wiki for your table</title>
+<meta name="description" content="Bard transcribes your in-person tabletop game from one microphone, shows who said what, and keeps a campaign wiki. Everything runs on your Mac.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main>
+  <header class="hero">
+    <h1>Bard</h1>
+    <p class="lead">Live transcripts and a growing campaign wiki for your in-person D&amp;D table, from one shared microphone.</p>
+    <p class="sub">Everything runs on your Mac: speech-to-text, speaker recognition and the AI. No audio or text leaves the machine.</p>
+    <p class="actions">
+      <a class="button primary" href="https://github.com/yipe/bard">Get Bard on GitHub</a>
+      <a class="button" href="https://cloud.5eapps.com">Bard Cloud backup</a>
+    </p>
+  </header>
+
+  <section aria-labelledby="example-heading">
+    <h2 id="example-heading" class="visually-hidden">Example transcript</h2>
+    <figure class="transcript">
+      <div class="card">
+        <p class="line"><span class="chip">GM</span> <span class="text">The door is carved with a drowned city. Ül Dar, if you can read the old script.</span></p>
+        <p class="line"><span class="chip">Mira</span> <span class="text">I can. I want to check it for traps first.</span></p>
+        <p class="line"><span class="chip">Tobin</span> <span class="text">Elara owes someone money in Ül Dar, right?</span></p>
+        <p class="line"><span class="chip unknown">Voice 3</span> <span class="text">That’s me, I’m Elara.</span></p>
+      </div>
+      <figcaption>Unknown voices show up as Voice 1, Voice 2…; tap a name once and every line from that voice is relabeled.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="does-heading">
+    <h2 id="does-heading">What it does</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>Live transcript</h3>
+        <p>Who is speaking and what they said, as the game happens.</p>
+      </article>
+      <article class="card">
+        <h3>No setup recording</h3>
+        <p>Name a voice once, mid-game; an optional 15–30 second sample helps quiet players.</p>
+      </article>
+      <article class="card">
+        <h3>Character voices</h3>
+        <p>A GM’s distinct NPC voice can be its own character.</p>
+      </article>
+      <article class="card">
+        <h3>Names spelled right</h3>
+        <p>Bard learns your campaign’s names and fixes misheard ones, keeping what was heard.</p>
+      </article>
+      <article class="card">
+        <h3>Campaign wiki</h3>
+        <p>Session write-ups, facts and new names, as plain Markdown you can edit in Obsidian.</p>
+      </article>
+      <article class="card">
+        <h3>Ask about the campaign</h3>
+        <p>Ask a question; Bard searches every transcript and note and shows its sources.</p>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="private-heading">
+    <h2 id="private-heading">Private by design</h2>
+    <ul>
+      <li>Runs on one Apple Silicon Mac. No account, no cloud, no subscription.</li>
+      <li>Recordings and voiceprints stay in a folder on your Mac. Ask your table before you record.</li>
+      <li>Bard Cloud backup is optional and off until you connect it.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="need-heading">
+    <h2 id="need-heading">What you need</h2>
+    <ul>
+      <li>A Mac with Apple Silicon</li>
+      <li><a href="https://lmstudio.ai/">LM Studio</a> for spelling cleanup and write-ups (transcription works without it)</li>
+      <li>A free <a href="https://huggingface.co/">Hugging Face</a> account (speaker-recognition model)</li>
+      <li>A microphone in the middle of the table (an omnidirectional or boundary mic works best)</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="install-heading">
+    <h2 id="install-heading">Install</h2>
+    <p>Bard is open source and installs from the command line:</p>
+    <pre tabindex="0"><code>git clone https://github.com/yipe/bard &amp;&amp; cd bard
+yarn setup                         # uv sync + pnpm install
+yarn build                         # build the web UI
+lms server start --port 1235 &amp;&amp; lms load google/gemma-4-26b-a4b-qat --yes   # or use the LM Studio app
+HF_TOKEN=hf_… yarn start           # → http://127.0.0.1:8765</code></pre>
+    <p>Full instructions: <a href="https://github.com/yipe/bard#readme">README on GitHub</a></p>
+  </section>
+
+  <section aria-labelledby="cloud-heading">
+    <h2 id="cloud-heading">Bard Cloud</h2>
+    <p>Optional backup for your campaign notes, with history, a read-only web view and share links for your players. Free with a DPRcalc account.</p>
+    <p class="actions"><a class="button primary" href="https://cloud.5eapps.com">Bard Cloud backup</a></p>
+    <p class="small"><a href="https://cloud.5eapps.com/terms">Terms</a> · <a href="https://cloud.5eapps.com/privacy">Privacy</a></p>
+  </section>
+</main>
+
+<footer>
+  <p>Bard is open source (<a href="https://github.com/yipe/bard/blob/main/LICENSE">MIT</a>). Made by <a href="https://dprcalc.com">DPRcalc</a>.</p>
+  <p class="small">Unofficial; not affiliated with or endorsed by Wizards of the Coast. Bard’s built-in rules vocabulary comes from the System Reference Document 5.1/5.2 (<a href="https://creativecommons.org/licenses/by/4.0/legalcode">CC-BY-4.0</a>).</p>
+</footer>
+</body>
+</html>

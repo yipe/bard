@@ -49,3 +49,4 @@ pnpm-debug.log*
 *.swp
 *.swo
 *.sw?
+site/.vercel
