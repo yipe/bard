@@ -52,6 +52,41 @@
       ],
       "additionalProperties": false
     },
+    "Me": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "email",
+        "name",
+        "image_url"
+      ],
+      "additionalProperties": false
+    },
     "CreateVaultRequest": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",

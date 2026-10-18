@@ -5,6 +5,7 @@
   "scripts": {
     "setup": "cd backend && uv sync --all-groups && cd ../web && pnpm install",
     "start": "cd backend && uv run troubadour",
+    "dev": "yarn build && yarn start",
     "dev:web": "cd web && pnpm dev",
     "build": "cd web && pnpm build",
     "test": "yarn test:backend && yarn test:web",

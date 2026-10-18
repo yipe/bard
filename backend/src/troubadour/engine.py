@@ -77,6 +77,9 @@ SESSION_ID = re.compile(r"\d{4}-\d{2}-\d{2}_\d{6}-[0-9a-f]{4}")
 OVERFLOW = "__overflow__"  # queued to a WebSocket whose client fell behind: server closes it, client resyncs
 
 
+CAMPAIGN_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")  # also Troubadour Cloud's rule for a campaign id
+
+
 def short_id(prefix: str) -> str:
     return f"{prefix}{uuid.uuid4().hex[:10]}"
 
@@ -1013,17 +1016,33 @@ class Engine:
 
     # ------------------------------------------------------------- campaigns
 
-    def vault_dir(self) -> Path:
-        """The open campaign's notes: MAIN's is config.vault_dir() (TROUBADOUR_VAULT or data/campaign),
-        later ones live in data/campaigns/<id>."""
-        if self.campaign == MAIN_CAMPAIGN:
+    def vault_dir(self, cid: str | None = None) -> Path:
+        """A campaign's notes (default: the open one): MAIN's is config.vault_dir() (TROUBADOUR_VAULT or
+        data/campaign), later ones live in data/campaigns/<id>."""
+        cid = cid or self.campaign
+        if cid == MAIN_CAMPAIGN:
             return config.vault_dir()
-        return config.DATA_DIR / "campaigns" / self.campaign
+        return config.DATA_DIR / "campaigns" / cid
 
     def create_campaign(self, name: str) -> dict:
         with self.lock:
             c = Campaign(short_id("c"), name)
             self.campaigns[c.id] = c
+        self._save_state()
+        self.bus.emit("campaigns.updated", self.campaigns_json())
+        return c.to_json()
+
+    def adopt_campaign(self, cid: str, name: str) -> dict:
+        """The campaign with this id, created (as an empty one called `name`) when this Mac doesn't have it,
+        so a campaign restored from Troubadour Cloud shows in the picker and keeps backing up to its own
+        vault. The id names a folder, so only the shape the service accepts gets through."""
+        with self.lock:
+            existing = self.campaigns.get(cid)
+            if existing:
+                return existing.to_json()
+            if not CAMPAIGN_ID.fullmatch(cid):
+                raise ValueError("That campaign has an id Troubadour can't use.")
+            c = self.campaigns[cid] = Campaign(cid, name)
         self._save_state()
         self.bus.emit("campaigns.updated", self.campaigns_json())
         return c.to_json()

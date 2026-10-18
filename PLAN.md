@@ -301,8 +301,8 @@ Neon, private Vercel Blob) that shows it read-only in a browser. Troubadour work
   minutes after it lands, without any hook into the write-up code. A campaign with no notes yet is
   left alone (no empty vault). An automatic backup that fails (offline at the table) doesn't put
   an error chip in the header; the Cloud backup panel shows it and the next attempt retries.
-- **Restore** (a job, kind `restore`): the newest snapshot of any of the account's vaults (this
-  campaign's, or one from another Mac) into the open campaign's folder. Each file is checked
+- **Restore** (a job, kind `restore`): the newest snapshot of any of the account's vaults into the campaign
+  with the vault's id (one this Mac lacks is created, so it joins the picker). Each file is checked
   against its sha256 before it's written; a note that differs is moved to
   `.trash/Before restore <time>/` first; files the snapshot doesn't have are left alone (a restore
   never deletes). Paths go through the same rules as backups and must land inside the folder (no
@@ -314,8 +314,10 @@ Neon, private Vercel Blob) that shows it read-only in a browser. Troubadour work
 - API: `GET /api/cloud` (never calls the service), `POST /api/cloud/connect` → `{authorize_url}`,
   `GET /api/cloud/callback`, `POST /api/cloud/disconnect`, `PUT /api/cloud/options
   {include_transcripts?, auto_backup?}`, `POST /api/cloud/backup` → job, `GET /api/cloud/vaults`,
-  `POST /api/cloud/restore {vault_id}` → job. Event: `cloud.updated`.
-- UI: Campaign header → **Cloud backup** (connect, automatic on/off, include transcripts, back up
+  `GET /api/cloud/account` (name, email, avatar as a `data:` URL the server fetched, so the browser never
+  contacts the image host), `POST /api/cloud/restore {vault_id}` → job. Event: `cloud.updated`.
+- UI: the header's account menu (avatar, who is signed in, Back up now, Disconnect; Sign in when not connected);
+  Campaign header → **Cloud backup** (connect, automatic on/off, include transcripts, back up
   now, last backup or failure, restore, disconnect).
 
 ## Spelling cleanup (behind the transcriber)

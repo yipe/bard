@@ -42,6 +42,9 @@ MAX_SEGMENT_CHARS = 255
 TRANSCRIPTS = "Sessions/Transcripts/"
 LOGIN_TTL_S = 600  # an unfinished sign-in is forgotten after 10 minutes
 REFRESH_EARLY_S = 60
+ACCOUNT_TTL_S = 600  # who is signed in barely changes; the header asks whenever it opens
+AVATAR_MAX_BYTES = 200_000
+AVATAR_TYPES = ("image/jpeg", "image/png", "image/webp", "image/gif")  # DPRcalc avatars can be GIFs
 
 
 class CloudError(Exception):
@@ -171,6 +174,7 @@ class Cloud:
         self.url = (url or config.CLOUD_URL).rstrip("/")
         self.path = path or (lambda: config.DATA_DIR / "cloud.json")
         self.http = http or httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0), follow_redirects=False)
+        self._account: tuple[str, float, dict] | None = None  # (who it was fetched for, when, the account)
         self._lock = threading.Lock()
         self._refresh_lock = threading.Lock()  # one token refresh at a time (see _token)
         self._pending: dict[str, tuple[str, dict, float]] = {}  # state -> (verifier, client config, started)
@@ -407,6 +411,42 @@ class Cloud:
             "fingerprint": before,
         }
 
+    # ---------------------------------------------------------------- account
+
+    def account(self) -> dict:
+        """Who is signed in, for the header's account menu: `{"email", "name", "avatar"}`, each None when the
+        service doesn't know it (a sign-in made before it asked for the profile has no name or picture).
+        `avatar` is a `data:` URL: the picture is fetched here, once, so the browser never contacts the
+        image host. Remembered for ACCOUNT_TTL_S; signing in again fetches it afresh."""
+        data = self._load()
+        who = data.get("refresh_token") or data.get("access_token")
+        if not who:
+            raise NotConnected()
+        cached = self._account
+        if cached and cached[0] == who and time.time() - cached[1] < ACCOUNT_TTL_S:
+            return cached[2]
+        me = self._api("GET", "/me")
+        if not isinstance(me, dict):
+            raise CloudError("internal", "Troubadour Cloud sent an account Troubadour can't read.")
+        text = lambda v: v.strip()[:100] if isinstance(v, str) and v.strip() else None  # noqa: E731
+        account = {"email": text(me.get("email")), "name": text(me.get("name")), "avatar": self._avatar(me.get("image_url"))}
+        self._account = (who, time.time(), account)
+        return account
+
+    def _avatar(self, url: object) -> str | None:
+        """The picture as a data: URL, or None if it's missing, not https, not a plain image or too big.
+        Best-effort: a missing picture only means initials in the menu."""
+        if not isinstance(url, str) or not url.startswith("https://"):
+            return None
+        try:
+            r = self._request("GET", url)
+        except CloudError:
+            return None
+        kind = r.headers.get("content-type", "").split(";")[0].strip().lower()
+        if r.status_code != 200 or kind not in AVATAR_TYPES or len(r.content) > AVATAR_MAX_BYTES:
+            return None
+        return f"data:{kind};base64,{base64.b64encode(r.content).decode()}"
+
     # ---------------------------------------------------------------- restore
 
     def vaults(self) -> list[dict]:
@@ -414,14 +454,19 @@ class Cloud:
         result = self._api("GET", "/vaults")
         return result if isinstance(result, list) else []
 
+    def vault(self, vault_id: str) -> dict:
+        """One of this account's campaigns, or CloudError not_found."""
+        vault = next((v for v in self.vaults() if v.get("id") == vault_id), None)
+        if vault is None:
+            raise CloudError("not_found", "That campaign isn't in Troubadour Cloud.")
+        return vault
+
     def restore(self, vault_id: str, root: Path, progress: Callable[[int, int, str], None]) -> dict:
         """Bring a vault's newest snapshot back into `root`. Notes that differ are replaced and their current
         versions moved to `.trash/`; notes the snapshot doesn't have are left alone (a restore never deletes).
         Every file is checked against its sha256 before it's written. Runs on a job thread."""
         progress(0, 0, "Finding the newest backup")
-        vault = next((v for v in self.vaults() if v.get("id") == vault_id), None)
-        if vault is None:
-            raise CloudError("not_found", "That campaign isn't in Troubadour Cloud.")
+        vault = self.vault(vault_id)
         if not vault.get("head_snapshot"):
             raise CloudError("not_found", "That campaign hasn't been backed up yet.")
         listing = self._api("GET", f"/vaults/{vault_id}/snapshots/{vault['head_snapshot']}")

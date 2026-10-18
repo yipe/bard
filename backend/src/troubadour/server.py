@@ -627,17 +627,33 @@ def cloud_vaults():
         raise HTTPException(401 if e.code == "unauthorized" else 502, str(e)) from None
 
 
+@app.get("/api/cloud/account")
+def cloud_account():
+    """Who is signed in to Troubadour Cloud (name, email, avatar) for the header menu; 401 when not connected."""
+    try:
+        return cloud.account()
+    except CloudError as e:
+        raise HTTPException(401 if e.code == "unauthorized" else 502, str(e)) from None
+
+
 @app.post("/api/cloud/restore")
 def cloud_restore(body: CloudRestoreIn):
-    """Bring a backed-up campaign's newest snapshot into the open campaign's notes (a background job, kind
-    "restore"). Notes that differ go to .trash first; nothing is deleted."""
+    """Bring a backed-up campaign's newest snapshot back (a background job, kind "restore"). It goes into the
+    campaign with the vault's id: one this Mac doesn't have yet is created (so it shows in the picker),
+    one it has keeps its other notes. Notes that differ go to .trash first; nothing is deleted."""
     with campaign_gate:
-        cid, name, root = _open_campaign()
+        cid, name, _ = _open_campaign()
         if not cloud.status(cid)["connected"]:
             raise HTTPException(400, "Connect Troubadour Cloud first.")
 
         def work(job):
-            result = cloud.restore(body.vault_id, root, _job_progress(job))
+            vault = cloud.vault(body.vault_id)
+            target = vault.get("campaign_id")
+            if not isinstance(target, str):
+                raise CloudError("not_found", "That campaign has no id Troubadour can use.")
+            job.title = str(vault.get("name") or "Restored campaign")[:60]
+            engine.adopt_campaign(target, job.title)
+            result = cloud.restore(body.vault_id, engine.vault_dir(target), _job_progress(job))
             job.done = job.total
             job.message = (
                 f"Restored {result['restored']} files"

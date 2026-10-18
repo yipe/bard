@@ -41,6 +41,8 @@ class FakeService:
         self.fail_next_commit: str | None = None  # an error code to answer the next commit with
         self.tampered: dict[str, bytes] = {}  # sha256 -> bytes served instead of the real ones
         self.rejecting: threading.Barrier | None = None
+        self.me = {"email": "gm@example.com", "name": "gm", "image_url": "https://img.test/gm.png"}
+        self.avatar = ("image/png", b"\x89PNG fake picture")  # what img.test serves
         self.foreign_sign_in = False  # tokens still refresh, but the API accepts none (another sign-in provider)
 
     def transport(self) -> httpx.MockTransport:
@@ -86,6 +88,9 @@ class FakeService:
                 return httpx.Response(200, json=self._issue("user_gm"))
             user = self.refresh.pop(form["refresh_token"][0], None)
             return httpx.Response(200, json=self._issue(user)) if user else httpx.Response(400, json={"error": "invalid_grant"})
+        if url.startswith("https://img.test/"):
+            kind, data = self.avatar
+            return httpx.Response(200, content=data, headers={"content-type": kind})
         if url.startswith("https://download.test/"):
             data = self.tampered.get(url.rsplit("/", 1)[1]) or self.blobs.get(url.rsplit("/", 1)[1])
             return httpx.Response(200, content=data) if data is not None else httpx.Response(404)
@@ -120,6 +125,9 @@ class FakeService:
             v = {"id": str(uuid.uuid4()), "head_snapshot": None, "created_at": "2026-10-17T00:00:00Z", **body}
             self.vaults[v["id"]] = v
             return httpx.Response(200, json=v)
+        if (method, path) == ("GET", "/me"):
+            assert set(self.me) == set(CONTRACT["schemas"]["Me"]["properties"])
+            return httpx.Response(200, json=self.me)
         if (method, path) == ("GET", "/vaults"):
             return httpx.Response(200, json=list(self.vaults.values()))
         if method == "GET" and "/snapshots/" in path:
@@ -215,6 +223,42 @@ def noop(*_):
 
 
 # ---------------------------------------------------------------- contract and paths
+
+
+def test_account_is_who_signed_in_with_the_avatar_fetched_once(client, service):
+    with pytest.raises(CloudError) as refused:
+        client.account()
+    assert refused.value.code == "unauthorized"
+    connect(client, service)
+    expected = "data:image/png;base64," + base64.b64encode(service.avatar[1]).decode()
+    assert client.account() == {"email": "gm@example.com", "name": "gm", "avatar": expected}
+    before = len(service.requests)
+    assert client.account()["name"] == "gm"
+    assert len(service.requests) == before  # remembered
+    client.logout()
+    with pytest.raises(CloudError):
+        client.account()
+
+
+def test_account_shows_a_gif_avatar(client, service):
+    connect(client, service)
+    service.avatar = ("image/gif", b"GIF89a fake")
+    assert client.account()["avatar"] == "data:image/gif;base64," + base64.b64encode(b"GIF89a fake").decode()
+
+
+def test_account_without_a_profile_or_with_a_picture_it_wont_show(client, service):
+    connect(client, service)
+    service.me = {"email": "gm@example.com", "name": None, "image_url": None}
+    assert client.account() == {"email": "gm@example.com", "name": None, "avatar": None}
+    for me, avatar in [
+        ({"image_url": "http://img.test/gm.png"}, service.avatar),  # not https
+        ({}, ("image/svg+xml", b"<svg onload=alert(1)>")),  # not a plain image
+        ({}, ("image/png", b"x" * (cloud.AVATAR_MAX_BYTES + 1))),  # too big
+    ]:
+        client._account = None
+        service.me = {"email": "gm@example.com", "name": "gm", "image_url": "https://img.test/gm.png"} | me
+        service.avatar = avatar
+        assert client.account()["avatar"] is None
 
 
 def test_limits_and_codes_match_the_service_contract():
@@ -468,6 +512,7 @@ def api(dirs, service, monkeypatch):
     monkeypatch.delenv("TROUBADOUR_VAULT", raising=False)
     fake = Cloud(url=SERVICE, http=httpx.Client(transport=service.transport()))
     monkeypatch.setattr(server, "cloud", fake)
+    monkeypatch.setattr(server.engine, "campaigns", dict(server.engine.campaigns))  # restores add campaigns
     return TestClient(server.app, base_url="http://127.0.0.1:8765")
 
 
@@ -740,6 +785,48 @@ def test_api_restore_runs_as_a_job(api, service):
     assert job["state"] == "done", job["message"]
     assert job["message"].startswith("Restored 1 files")
     assert (notes / "Facts.md").read_text() == "The gate opens at dawn.\n"
+
+
+def _backed_up_vault(api, service) -> dict:
+    code, state = service.approve(api.post("/api/cloud/connect").json()["authorize_url"])
+    api.get("/api/cloud/callback", params={"code": code, "state": state})
+    notes = config.vault_dir()
+    notes.mkdir(parents=True, exist_ok=True)
+    (notes / "Facts.md").write_text("The gate opens at dawn.\n")
+    assert wait_job(api.post("/api/cloud/backup").json()["id"])["state"] == "done"
+    (vault,) = service.vaults.values()
+    return vault
+
+
+def test_api_restoring_a_campaign_from_another_mac_adds_it_to_the_picker(api, service):
+    vault = _backed_up_vault(api, service)
+    vault["campaign_id"], vault["name"] = "c0123456789", "The Sunken Gate"  # as another Mac's campaign
+    job = wait_job(api.post("/api/cloud/restore", json={"vault_id": vault["id"]}).json()["id"])
+    assert job["state"] == "done", job["message"]
+    assert job["title"] == "The Sunken Gate"
+    state = api.get("/api/state").json()
+    assert {"id": "c0123456789", "name": "The Sunken Gate"} in state["campaigns"]
+    assert state["campaign"] == "main"  # restoring doesn't switch campaigns
+    assert (config.DATA_DIR / "campaigns" / "c0123456789" / "Facts.md").read_text() == "The gate opens at dawn.\n"
+
+
+def test_api_restore_refuses_a_campaign_id_that_could_name_another_folder(api, service):
+    vault = _backed_up_vault(api, service)
+    vault["campaign_id"] = "../escape"
+    before = api.get("/api/state").json()["campaigns"]
+    job = wait_job(api.post("/api/cloud/restore", json={"vault_id": vault["id"]}).json()["id"])
+    assert job["state"] == "error"
+    assert api.get("/api/state").json()["campaigns"] == before
+    assert not (config.DATA_DIR / "escape").exists()
+
+
+def test_api_account_needs_connecting(api, service):
+    assert api.get("/api/cloud/account").status_code == 401
+    code, state = service.approve(api.post("/api/cloud/connect").json()["authorize_url"])
+    api.get("/api/cloud/callback", params={"code": code, "state": state})
+    body = api.get("/api/cloud/account").json()
+    assert (body["email"], body["name"]) == ("gm@example.com", "gm")
+    assert body["avatar"].startswith("data:image/png;base64,")
 
 
 def test_api_options_turn_automatic_backups_off(api):
