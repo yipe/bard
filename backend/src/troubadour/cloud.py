@@ -1,4 +1,4 @@
-"""Bard Cloud: an optional, opt-in backup of the open campaign's vault, readable later in a browser.
+"""Troubadour Cloud: an optional, opt-in backup of the open campaign's vault, readable later in a browser.
 
 Nothing here touches the network until the user clicks Connect. The service (a separate project) keeps
 snapshots of the vault's files. A backup only reads the vault; only a restore, which the user starts, writes
@@ -31,7 +31,7 @@ import httpx
 
 from . import config
 
-log = logging.getLogger("bard")
+log = logging.getLogger("troubadour")
 
 # The service's hard limits (contract.schema.json `limits`); a file over them is skipped, not fatal.
 MAX_FILE_BYTES = 20 * 1024 * 1024
@@ -55,7 +55,7 @@ class CloudError(Exception):
 
 class NotConnected(CloudError):
     def __init__(self):
-        super().__init__("unauthorized", "Not connected to Bard Cloud: connect first.")
+        super().__init__("unauthorized", "Not connected to Troubadour Cloud: connect first.")
 
 
 def path_problem(path: str) -> str | None:
@@ -230,22 +230,22 @@ class Cloud:
         try:
             return self.http.request(method, url, **kwargs)
         except httpx.HTTPError as e:
-            raise CloudError("network", f"Couldn't reach Bard Cloud ({type(e).__name__}).") from None
+            raise CloudError("network", f"Couldn't reach Troubadour Cloud ({type(e).__name__}).") from None
 
     def start_login(self) -> str:
         """The URL to open in the browser; the service's sign-in page comes back to /api/cloud/callback."""
         r = self._request("GET", f"{self.url}/api/v1/client")
         if r.status_code != 200:
-            raise CloudError("internal", f"Bard Cloud sign-in isn't available ({r.status_code}).")
+            raise CloudError("internal", f"Troubadour Cloud sign-in isn't available ({r.status_code}).")
         client = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
         fields = ("authorize_url", "token_url", "client_id", "redirect_uri")
         if not all(isinstance(client.get(k), str) for k in fields) or not isinstance(client.get("scopes"), list):
-            raise CloudError("internal", "Bard Cloud's sign-in settings don't look right.")
+            raise CloudError("internal", "Troubadour Cloud's sign-in settings don't look right.")
         if not all(client[k].startswith("https://") for k in ("authorize_url", "token_url")):
-            raise CloudError("internal", "Bard Cloud's sign-in must use HTTPS.")
+            raise CloudError("internal", "Troubadour Cloud's sign-in must use HTTPS.")
         expected = f"http://127.0.0.1:{config.PORT}/api/cloud/callback"
         if client["redirect_uri"] != expected:
-            raise ValueError(f"Bard Cloud signs in back to {client['redirect_uri']}; this Bard runs at {expected}.")
+            raise ValueError(f"Troubadour Cloud signs in back to {client['redirect_uri']}; this Troubadour runs at {expected}.")
         verifier = secrets.token_urlsafe(64)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
         state = secrets.token_urlsafe(24)
@@ -268,7 +268,7 @@ class Cloud:
         with self._lock:
             pending = self._pending.pop(state, None)
         if pending is None or time.time() - pending[2] >= LOGIN_TTL_S:
-            raise ValueError("This sign-in expired or didn't start here. Connect again from Bard.")
+            raise ValueError("This sign-in expired or didn't start here. Connect again from Troubadour.")
         verifier, client, _ = pending
         r = self._request(
             "POST",
@@ -282,12 +282,12 @@ class Cloud:
             },
         )
         if r.status_code != 200:
-            raise CloudError("unauthorized", f"Bard Cloud didn't accept the sign-in ({r.status_code}).")
+            raise CloudError("unauthorized", f"Troubadour Cloud didn't accept the sign-in ({r.status_code}).")
         self._store_tokens(r.json(), client)
 
     def _store_tokens(self, tokens: dict, client: dict) -> None:
         if not isinstance(tokens.get("access_token"), str):
-            raise CloudError("unauthorized", "Bard Cloud sent no access token.")
+            raise CloudError("unauthorized", "Troubadour Cloud sent no access token.")
 
         def change(d: dict) -> None:
             d["access_token"] = tokens["access_token"]
@@ -330,7 +330,7 @@ class Cloud:
                 self.logout()
                 raise NotConnected()
             if r.status_code != 200:
-                raise CloudError("internal", f"Bard Cloud couldn't refresh the sign-in ({r.status_code}).")
+                raise CloudError("internal", f"Troubadour Cloud couldn't refresh the sign-in ({r.status_code}).")
             self._store_tokens(r.json(), {"token_url": data["token_url"], "client_id": data["client_id"]})
             return self._load()["access_token"]
 
@@ -354,7 +354,7 @@ class Cloud:
         if r.is_success:
             return payload
         error = payload.get("error", {}) if isinstance(payload, dict) else {}
-        raise CloudError(error.get("code", "internal"), error.get("message", f"Bard Cloud said {r.status_code}."), error)
+        raise CloudError(error.get("code", "internal"), error.get("message", f"Troubadour Cloud said {r.status_code}."), error)
 
     def backup(self, campaign_id: str, name: str, root: Path, progress: Callable[[int, int, str], None]) -> dict:
         """Push the vault as a new snapshot (or nothing, if it hasn't changed). Runs on a job thread.
@@ -380,7 +380,7 @@ class Cloud:
         # Taken before reading: an edit made during the backup changes it, so a later backup picks the edit up.
         before = fingerprint(root, include)
         files, where, skipped = scan(root, include, self._hashes)
-        vault = self._api("POST", "/vaults", {"name": name.strip()[:100] or "Campaign", "bard_campaign_id": campaign_id})
+        vault = self._api("POST", "/vaults", {"name": name.strip()[:100] or "Campaign", "campaign_id": campaign_id})
         base = vault["head_snapshot"]
         plan = self._api("POST", f"/vaults/{vault['id']}/plan", {"base_snapshot": base, "files": files})
         uploads = plan["uploads"]
@@ -410,7 +410,7 @@ class Cloud:
     # ---------------------------------------------------------------- restore
 
     def vaults(self) -> list[dict]:
-        """The campaigns this account has in Bard Cloud (any Mac's)."""
+        """The campaigns this account has in Troubadour Cloud (any Mac's)."""
         result = self._api("GET", "/vaults")
         return result if isinstance(result, list) else []
 
@@ -421,7 +421,7 @@ class Cloud:
         progress(0, 0, "Finding the newest backup")
         vault = next((v for v in self.vaults() if v.get("id") == vault_id), None)
         if vault is None:
-            raise CloudError("not_found", "That campaign isn't in Bard Cloud.")
+            raise CloudError("not_found", "That campaign isn't in Troubadour Cloud.")
         if not vault.get("head_snapshot"):
             raise CloudError("not_found", "That campaign hasn't been backed up yet.")
         listing = self._api("GET", f"/vaults/{vault_id}/snapshots/{vault['head_snapshot']}")
@@ -470,7 +470,7 @@ class Cloud:
     def _download(self, url: str, size: int) -> bytes:
         """At most `size` bytes from a signed URL (the service says how big each file is)."""
         if not isinstance(url, str) or not url.startswith("https://"):
-            raise CloudError("integrity", "Bard Cloud sent a download link that isn't HTTPS.")
+            raise CloudError("integrity", "Troubadour Cloud sent a download link that isn't HTTPS.")
         try:
             with self.http.stream("GET", url) as r:
                 if not r.is_success:
@@ -482,7 +482,7 @@ class Cloud:
                         raise CloudError("integrity", "A download was larger than it should be.")
                 return bytes(data)
         except httpx.HTTPError as e:
-            raise CloudError("network", f"Couldn't reach Bard Cloud ({type(e).__name__}).") from None
+            raise CloudError("network", f"Couldn't reach Troubadour Cloud ({type(e).__name__}).") from None
 
 
 # What fingerprint() gives for a folder with nothing to back up.

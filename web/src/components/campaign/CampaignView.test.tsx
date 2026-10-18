@@ -230,7 +230,7 @@ describe("entry editor", () => {
     await renderView()
     await open("Elara")
     expect(
-      screen.getByText("How speech-to-text misspells it; Bard fixes these in new transcripts."),
+      screen.getByText("How speech-to-text misspells it; Troubadour fixes these in new transcripts."),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Accept spelling Ilara" }))
     await flush()
@@ -448,7 +448,7 @@ describe("entry editor", () => {
     const { writes } = server()
     await renderView()
     await open("Mystery Box")
-    expect(screen.getByText("Bard suggested this from a session.")).toBeInTheDocument()
+    expect(screen.getByText("Troubadour suggested this from a session.")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: /Keep/ }))
     await flush()
     expect(writes().at(-1)).toEqual({
@@ -456,7 +456,7 @@ describe("entry editor", () => {
       url: "/api/campaign/entities/Mystery%20Box",
       body: { status: "confirmed" },
     })
-    expect(screen.queryByText("Bard suggested this from a session.")).toBeNull()
+    expect(screen.queryByText("Troubadour suggested this from a session.")).toBeNull()
   })
 
   it("Discard deletes a suggested entry and clears the selection", async () => {

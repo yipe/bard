@@ -1,4 +1,4 @@
-"""Non-destructive regression check against a running `bard` server.
+"""Non-destructive regression check against a running `troubadour` server.
 
 Only creates/deletes its own players (named "zz-check-…"); leaves real players,
 voices and state alone. Plays no audio (file sessions replay server-side only).

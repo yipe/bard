@@ -31,7 +31,7 @@ import httpx
 from . import config, dnd_terms, transcript
 from .campaign import TYPES, Entity, Vault, add_unique, everyday, norm, safe_name, write_atomic
 
-log = logging.getLogger("bard")
+log = logging.getLogger("troubadour")
 
 CHUNK_CHARS = 6000  # notes per extraction call; small enough for a fast, careful answer
 # Per transcript part, whatever the model returns. The last part gets more room: capped at 3 like the
@@ -305,7 +305,7 @@ class Memory:
         self.bus = bus
         self.llm = llm or MemoryLLM()
         self.sessions_dir = sessions_dir or (lambda: config.DATA_DIR / "sessions")
-        self.seed = seed  # () -> [(name, type, description)]: names Bard already knows (Setup, voices panel)
+        self.seed = seed  # () -> [(name, type, description)]: names Troubadour already knows (Setup, voices panel)
         self.jobs: dict[str, Job] = {}
         self._q: queue.Queue = queue.Queue()
         self._lock = threading.Lock()
@@ -361,7 +361,7 @@ class Memory:
     # ---------------------------------------------------------------- seeding
 
     def seed_known(self) -> list[str]:
-        """Names Bard already knows become entries: Setup's characters (pc) and the character or
+        """Names Troubadour already knows become entries: Setup's characters (pc) and the character or
         NPC names given to voices in the voices panel (npc). The most certain names there are."""
         added = []
         for name, kind, description in self.seed():
@@ -390,7 +390,7 @@ class Memory:
         self.seed_known()
         stamp = time.strftime("%Y-%m-%d")
         path = self.vault.write_note(
-            "Notes", title, f"---\ntype: notes\nimported: {stamp}\ntags: [bard/notes]\n---\n# {title}\n\n{text}\n"
+            "Notes", title, f"---\ntype: notes\nimported: {stamp}\ntags: [troubadour/notes]\n---\n# {title}\n\n{text}\n"
         )
         note = path.stem
         job.note = str(path.relative_to(self.vault.root))
@@ -580,7 +580,7 @@ class Memory:
         tdir.mkdir(parents=True, exist_ok=True)
         (tdir / f"{sid}.md").write_text(transcript.markdown(record), encoding="utf-8")
         page = [
-            f"---\ntype: session\nsession_id: {sid}\ndate: {date}\nduration: {transcript.clock(s.get('duration_s', 0))}\ntags: [bard/session]\n---",
+            f"---\ntype: session\nsession_id: {sid}\ndate: {date}\nduration: {transcript.clock(s.get('duration_s', 0))}\ntags: [troubadour/session]\n---",
             f"# {note_title}",
             "",
             link_names(_text(summary.get("summary"), 2000), self.vault),

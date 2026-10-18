@@ -33,7 +33,7 @@ export default function App() {
       <div className="flex h-dvh flex-col">
         <header className="flex items-center gap-4 border-b bg-card/40 px-4 py-2.5">
           <div className="flex items-center gap-2 font-semibold tracking-tight">
-            <Feather className="size-5 text-primary" /> Bard
+            <Feather className="size-5 text-primary" /> Troubadour
           </div>
           {loaded && <CampaignSwitcher />}
           <nav className="flex gap-1 rounded-lg bg-muted p-1">
@@ -73,7 +73,7 @@ export default function App() {
         )}
         {!loaded ? (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">
-            Waiting for the Bard server…
+            Waiting for the Troubadour server…
           </div>
         ) : view === "setup" ? (
           <div className="flex-1 overflow-y-auto">

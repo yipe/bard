@@ -31,7 +31,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 import run  # noqa: E402
 
-from bard import voices  # noqa: E402
+from troubadour import voices  # noqa: E402
 
 EVAL = Path("samples/eval")
 CACHE = Path("samples/cache")

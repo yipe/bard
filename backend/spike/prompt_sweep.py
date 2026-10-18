@@ -1,11 +1,11 @@
-"""Whisper prompt with a big glossary: the old first-40-names prompt vs bard.asr.build_prompt.
+"""Whisper prompt with a big glossary: the old first-40-names prompt vs troubadour.asr.build_prompt.
 
     uv run --group spike spike/prompt_sweep.py --data DIR --samples DIR --extra-vault DIR
 
 The adjudicated session (asr_compare gold) had a 5-name glossary, which always fit. To see a
 big campaign, its glossary is padded with another campaign's names (--extra-vault; none of
 them are said in this session), in the order the engine uses (PCs, NPCs, the rest). Each gold
-line is transcribed once per config (bard.asr.transcribe, turbo) on its live span; the lines
+line is transcribed once per config (troubadour.asr.transcribe, turbo) on its live span; the lines
 before it are the live transcript's, except the last two: transcribed under the config itself.
 """
 
@@ -23,9 +23,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from asr_score import NAMES, wer  # noqa: E402
 
-from bard import asr  # noqa: E402
-from bard.audio import load_audio  # noqa: E402
-from bard.campaign import Vault  # noqa: E402
+from troubadour import asr  # noqa: E402
+from troubadour.audio import load_audio  # noqa: E402
+from troubadour.campaign import Vault  # noqa: E402
 
 SR = 16000
 VAULT = {"pc": ["Auggie", "Elara", "Kessia"], "npc": ["Delara", "Magenta"]}
@@ -50,7 +50,7 @@ def main() -> None:
     p.add_argument("--samples", type=Path, required=True)
     p.add_argument("--extra-vault", type=Path, required=True)
     p.add_argument("--session", default="2026-10-08_193401-eebf")
-    p.add_argument("--out", type=Path, default=Path("/tmp/bard_prompt.json"))
+    p.add_argument("--out", type=Path, default=Path("/tmp/troubadour_prompt.json"))
     args = p.parse_args()
     sdir = args.data / "sessions" / args.session
     record = json.loads((sdir / "transcript.orig.json").read_text())

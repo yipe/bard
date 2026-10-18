@@ -30,7 +30,7 @@ from .cloud import AutoBackup, Cloud, CloudError
 from .engine import OVERFLOW, SESSION_ID, Bus, Engine, sample_path, session_audio
 from .memory import Memory, spelling_suggestions
 
-log = logging.getLogger("bard")
+log = logging.getLogger("troubadour")
 bus = Bus()
 engine = Engine(bus)
 vault = Vault(engine.vault_dir)  # the open campaign's notes, looked up on every use
@@ -56,13 +56,13 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", config.HOST}
 async def lifespan(app: FastAPI):
     bus.loop = asyncio.get_running_loop()
     engine.start_background()
-    auto_backup.start()  # does nothing until the user connects Bard Cloud
+    auto_backup.start()  # does nothing until the user connects Troubadour Cloud
     yield
     auto_backup.stop()
     engine.shutdown()
 
 
-app = FastAPI(title="Bard", lifespan=lifespan)
+app = FastAPI(title="Troubadour", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=sorted(LOCAL_HOSTS))
 
 
@@ -178,7 +178,7 @@ class ReviewIn(BaseModel):
 
 
 class MicSpecsIn(BaseModel):
-    """Corrections to what Bard knows about a mic (the OS can't report pattern or capsule)."""
+    """Corrections to what Troubadour knows about a mic (the OS can't report pattern or capsule)."""
 
     model: str | None = Field(None, max_length=80)
     capsule: Literal["dynamic", "condenser", "array"] | None = None
@@ -270,7 +270,7 @@ def debug_memory():
 
 def _download(body: str | bytes, sid: str, fmt: str) -> Response:
     media = "text/markdown; charset=utf-8" if fmt == "md" else "application/json"
-    return Response(body, media_type=media, headers={"Content-Disposition": f'attachment; filename="bard-{sid}.{fmt}"'})
+    return Response(body, media_type=media, headers={"Content-Disposition": f'attachment; filename="troubadour-{sid}.{fmt}"'})
 
 
 @app.get("/api/transcript.{fmt}")
@@ -377,7 +377,7 @@ def audio_monitor(body: AudioMonitorIn):
 @app.get("/api/sessions/{sid}/audio.wav")
 def saved_audio(sid: str):
     """A mic session's recording (Range supported, so the browser can seek)."""
-    return FileResponse(_call(engine.session_file, sid, "wav"), media_type="audio/wav", filename=f"bard-{sid}.wav")
+    return FileResponse(_call(engine.session_file, sid, "wav"), media_type="audio/wav", filename=f"troubadour-{sid}.wav")
 
 
 # ------------------------------------------------------------------ campaign memory
@@ -508,7 +508,7 @@ def suggestions():
     return spelling_suggestions(vault, engine.campaign_sessions())
 
 
-# ------------------------------------------------------------------ Bard Cloud (opt-in backup)
+# ------------------------------------------------------------------ Troubadour Cloud (opt-in backup)
 
 
 def _cloud_status() -> dict:
@@ -523,7 +523,7 @@ def cloud_status():
 
 @app.post("/api/cloud/connect")
 def cloud_connect():
-    """Start signing in: the first time Bard contacts the service. Returns the page to open."""
+    """Start signing in: the first time Troubadour contacts the service. Returns the page to open."""
     try:
         return {"authorize_url": _call(cloud.start_login)}
     except CloudError as e:
@@ -536,20 +536,20 @@ def cloud_callback(
 ):
     """Where the service's sign-in page sends the browser back (state ties it to a sign-in started here)."""
     if error or not code or not state:
-        return _cloud_page("Not connected", f"Sign-in didn't finish{f' ({error})' if error else ''}. Try again from Bard.")
+        return _cloud_page("Not connected", f"Sign-in didn't finish{f' ({error})' if error else ''}. Try again from Troubadour.")
     try:
         cloud.finish_login(code, state)
     except (ValueError, CloudError) as e:
         return _cloud_page("Not connected", str(e))
     bus.emit("cloud.updated", _cloud_status())
-    return _cloud_page("Connected", "Bard is connected to Bard Cloud. You can close this tab.")
+    return _cloud_page("Connected", "Troubadour is connected to Troubadour Cloud. You can close this tab.")
 
 
 def _cloud_page(title: str, text: str) -> str:
     return (
-        f"<!doctype html><meta charset=utf-8><title>Bard Cloud: {html.escape(title)}</title>"
+        f"<!doctype html><meta charset=utf-8><title>Troubadour Cloud: {html.escape(title)}</title>"
         f'<body style="font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem">'
-        f'<h1>{html.escape(title)}</h1><p>{html.escape(text)}</p><p><a href="/campaign">Back to Bard</a></p>'
+        f'<h1>{html.escape(title)}</h1><p>{html.escape(text)}</p><p><a href="/campaign">Back to Troubadour</a></p>'
     )
 
 
@@ -614,13 +614,13 @@ def cloud_backup():
     with campaign_gate:
         cid, name, root = _open_campaign()
         if not cloud.status(cid)["connected"]:
-            raise HTTPException(400, "Connect Bard Cloud first.")
+            raise HTTPException(400, "Connect Troubadour Cloud first.")
         return _submit_backup(cid, name, root).to_json()
 
 
 @app.get("/api/cloud/vaults")
 def cloud_vaults():
-    """This account's campaigns in Bard Cloud (from any Mac), to restore from."""
+    """This account's campaigns in Troubadour Cloud (from any Mac), to restore from."""
     try:
         return cloud.vaults()
     except CloudError as e:
@@ -634,7 +634,7 @@ def cloud_restore(body: CloudRestoreIn):
     with campaign_gate:
         cid, name, root = _open_campaign()
         if not cloud.status(cid)["connected"]:
-            raise HTTPException(400, "Connect Bard Cloud first.")
+            raise HTTPException(400, "Connect Troubadour Cloud first.")
 
         def work(job):
             result = cloud.restore(body.vault_id, root, _job_progress(job))

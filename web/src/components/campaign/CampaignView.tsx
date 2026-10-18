@@ -97,8 +97,8 @@ export function CampaignView() {
               <div className="space-y-2 text-center text-sm text-muted-foreground">
                 <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
                 <p className="text-xs">
-                  Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Bard spell
-                  them right in new transcripts; entries marked for review were suggested by the AI.
+                  Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Troubadour
+                  spell them right in new transcripts; entries marked for review were suggested by the AI.
                 </p>
               </div>
             </div>

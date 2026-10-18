@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 from conftest import NullSource, RecordingBus, speak, tone, write_wav
 
-from bard import asr, config, levels
-from bard.engine import (
+from troubadour import asr, config, levels
+from troubadour.engine import (
     PANEL_S,
     STOP,
     Engine,
@@ -20,8 +20,8 @@ from bard.engine import (
     sample_path,
     short_id,
 )
-from bard.transcript import utf16_offset, utf16_to_py
-from bard.voices import normalize
+from troubadour.transcript import utf16_offset, utf16_to_py
+from troubadour.voices import normalize
 
 ALICE, BOB, CARA = 200.0, 800.0, 2500.0
 
@@ -91,7 +91,7 @@ def test_lines_carry_no_mechanics(engine):
 
 
 def test_filler_only_utterances_make_no_line(engine, monkeypatch):
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "Um...")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "Um...")
     t0, t1 = speak(engine, ALICE, 2.0)
     engine._process_utterance(engine.live, t0, t1)
     assert engine.messages == {}
@@ -99,7 +99,7 @@ def test_filler_only_utterances_make_no_line(engine, monkeypatch):
 
 
 def test_empty_transcript_creates_nothing(engine, monkeypatch):
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "")
     t0, t1 = speak(engine, ALICE, 2)
     engine._process_utterance(engine.live, t0, t1)
     assert engine.messages == {}
@@ -279,8 +279,8 @@ def test_audio_monitor_switches_the_live_meter_off_and_on(engine):
 
 
 def test_audio_monitor_setting_applies_to_the_next_session(engine, monkeypatch):
-    monkeypatch.setattr("bard.engine.subprocess.Popen", lambda cmd, **kw: type("P", (), {"terminate": lambda s: None})())
-    monkeypatch.setattr("bard.engine.MicSource.start", lambda self, sink, on_end: None)
+    monkeypatch.setattr("troubadour.engine.subprocess.Popen", lambda cmd, **kw: type("P", (), {"terminate": lambda s: None})())
+    monkeypatch.setattr("troubadour.engine.MicSource.start", lambda self, sink, on_end: None)
     monkeypatch.setattr(engine, "_segment_loop", lambda sess: None)
     monkeypatch.setattr(engine, "_worker_loop", lambda sess: None)
     engine.status, engine.live = "idle", None
@@ -301,7 +301,7 @@ def test_start_with_missing_mic_changes_nothing(engine, monkeypatch):
     def broken_start(self, sink, on_end):
         raise RuntimeError("Error querying device -1")
 
-    monkeypatch.setattr("bard.audio.MicSource.start", broken_start)
+    monkeypatch.setattr("troubadour.audio.MicSource.start", broken_start)
     with pytest.raises(ValueError, match="Couldn't open mic"):
         engine.start({"kind": "mic", "device": "Nope"})
     assert engine.status == "idle"
@@ -330,7 +330,7 @@ def test_utterance_failures_surface_once(engine, monkeypatch):
     def broken(audio):
         raise RuntimeError("whisper exploded")
 
-    monkeypatch.setattr("bard.asr.transcribe", broken)
+    monkeypatch.setattr("troubadour.asr.transcribe", broken)
     sess = engine.live
     for _ in range(2):
         sess.utt_q.put(speak(engine, ALICE, 2))
@@ -346,8 +346,8 @@ def test_keep_awake_survives_a_spawn_failure(monkeypatch):
     def boom(*args, **kwargs):
         raise OSError("fork failed")
 
-    monkeypatch.setattr("bard.engine.shutil.which", lambda name: "/usr/bin/caffeinate")
-    monkeypatch.setattr("bard.engine.subprocess.Popen", boom)
+    monkeypatch.setattr("troubadour.engine.shutil.which", lambda name: "/usr/bin/caffeinate")
+    monkeypatch.setattr("troubadour.engine.subprocess.Popen", boom)
     assert keep_awake() is None
 
 
@@ -470,9 +470,9 @@ def test_session_holds_a_sleep_assertion_until_it_ends(engine, monkeypatch):
         def terminate(self):
             self.terminated = True
 
-    monkeypatch.setattr("bard.engine.shutil.which", lambda name: "/usr/bin/caffeinate")
-    monkeypatch.setattr("bard.engine.subprocess.Popen", FakeProc)
-    monkeypatch.setattr("bard.engine.MicSource.start", lambda self, sink, on_end: None)
+    monkeypatch.setattr("troubadour.engine.shutil.which", lambda name: "/usr/bin/caffeinate")
+    monkeypatch.setattr("troubadour.engine.subprocess.Popen", FakeProc)
+    monkeypatch.setattr("troubadour.engine.MicSource.start", lambda self, sink, on_end: None)
     monkeypatch.setattr(engine, "_segment_loop", lambda sess: None)
     monkeypatch.setattr(engine, "_worker_loop", lambda sess: None)
     engine.status, engine.live = "idle", None
@@ -497,7 +497,7 @@ def _run_segmenter(engine, kind: str) -> tuple[LiveSession, threading.Thread]:
 
 
 def test_silent_mic_warns_once(engine, monkeypatch):
-    monkeypatch.setattr("bard.engine.MIC_STALL_S", 0.6)
+    monkeypatch.setattr("troubadour.engine.MIC_STALL_S", 0.6)
     sess, t = _run_segmenter(engine, "mic")
     deadline = time.monotonic() + 5
     while not engine.bus.of("error") and time.monotonic() < deadline:
@@ -512,7 +512,7 @@ def test_silent_mic_warns_once(engine, monkeypatch):
 
 
 def test_silent_file_replay_does_not_warn(engine, monkeypatch):
-    monkeypatch.setattr("bard.engine.MIC_STALL_S", 0.3)
+    monkeypatch.setattr("troubadour.engine.MIC_STALL_S", 0.3)
     sess, t = _run_segmenter(engine, "file")
     time.sleep(1.2)
     sess.abandon()
@@ -570,10 +570,10 @@ def test_refine_tidies_pending_even_before_anyone_is_named(engine):
 
 
 def test_new_lines_use_the_campaign_glossary(engine, tmp_path, monkeypatch):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
-    monkeypatch.setattr("bard.engine.GLOSSARY_CHECK_S", 0.0)
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "Dilara takes 12 slashing damage")
+    monkeypatch.setattr("troubadour.engine.GLOSSARY_CHECK_S", 0.0)
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "Dilara takes 12 slashing damage")
     engine.vault = Vault(tmp_path / "campaign")
     engine.vault.create("Elara", "pc", heard_as=["Dilara"])
     m = say(engine, ALICE)
@@ -600,11 +600,11 @@ def test_known_names_seed_the_glossary(engine):
 
 
 def test_whisper_hears_the_tables_names_and_the_last_lines(engine, tmp_path, monkeypatch):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
     monkeypatch.setattr(config, "ASR_PROMPT", True)
     prompts = []
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or f"line {len(prompts)}")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or f"line {len(prompts)}")
     engine.add_player("Theo", character="Elara")
     engine.vault = Vault(tmp_path / "campaign")
     engine.vault.create("Magenta", "npc")
@@ -618,13 +618,13 @@ def test_whisper_hears_the_tables_names_and_the_last_lines(engine, tmp_path, mon
 
 
 def test_a_big_glossary_never_pushes_the_tables_names_out_of_whispers_prompt(engine, tmp_path, monkeypatch):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
     monkeypatch.setattr(config, "ASR_PROMPT", True)
-    monkeypatch.setattr("bard.engine.GLOSSARY_CHECK_S", 0.0)
+    monkeypatch.setattr("troubadour.engine.GLOSSARY_CHECK_S", 0.0)
     heard = iter(["We sail past Npc7 Stormwhistle. " * 8, "And then?"])
     prompts = []
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or next(heard))
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or next(heard))
     engine.add_player("Theo", character="Elara")
     engine.vault = Vault(tmp_path / "campaign")
     for i in range(60):
@@ -639,7 +639,7 @@ def test_a_big_glossary_never_pushes_the_tables_names_out_of_whispers_prompt(eng
 def test_a_short_clip_gets_the_names_but_not_the_last_lines(engine, monkeypatch):
     monkeypatch.setattr(config, "ASR_PROMPT", True)
     prompts = []
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or f"line {len(prompts)}")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or f"line {len(prompts)}")
     engine.add_player("Theo", character="Elara")
     say(engine, ALICE, 2.0)
     say(engine, ALICE, 0.6)  # a blip: the last lines would tempt Whisper into a sentence
@@ -649,13 +649,13 @@ def test_a_short_clip_gets_the_names_but_not_the_last_lines(engine, monkeypatch)
 
 
 def test_a_nickname_said_lately_reaches_whispers_prompt(engine, tmp_path, monkeypatch):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
     monkeypatch.setattr(config, "ASR_PROMPT", True)
-    monkeypatch.setattr("bard.engine.GLOSSARY_CHECK_S", 0.0)
+    monkeypatch.setattr("troubadour.engine.GLOSSARY_CHECK_S", 0.0)
     heard = iter(["Ask Faryn about it.", "Sure."])
     prompts = []
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or next(heard))
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio, prompt=None: prompts.append(prompt) or next(heard))
     engine.vault = Vault(tmp_path / "campaign")
     engine.vault.create("Faryn Castellan", "npc", aliases=["Faryn"])
     say(engine, ALICE)
@@ -664,14 +664,14 @@ def test_a_nickname_said_lately_reaches_whispers_prompt(engine, tmp_path, monkey
 
 
 def test_spelling_cleanup_live(engine, tmp_path, monkeypatch):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
-    monkeypatch.setattr("bard.engine.GLOSSARY_CHECK_S", 0.0)
+    monkeypatch.setattr("troubadour.engine.GLOSSARY_CHECK_S", 0.0)
     engine.vault = Vault(tmp_path / "campaign")
     engine.vault.create("Elara", "pc", description="Theo's paladin.")
     engine.vault.create("Delara", "npc", description="An NPC Theo plays.")
     engine.vault.create("Auggie", "pc")
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "augie hits Dallara for 12 slashing damage")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "augie hits Dallara for 12 slashing damage")
     m = say(engine, ALICE)
     assert m["text"] == "Auggie hits Dallara for 12 slashing damage"  # the sure fix, before anyone sees it
     assert m["fixes"] == [{"start": 0, "end": 6, "heard": "augie"}]
@@ -697,12 +697,12 @@ def test_spelling_cleanup_live(engine, tmp_path, monkeypatch):
 
 
 def test_cleanup_skips_a_line_that_changed_meanwhile(engine, monkeypatch, tmp_path):
-    from bard.campaign import Vault
+    from troubadour.campaign import Vault
 
     engine.vault = Vault(tmp_path / "campaign")
     engine.vault.create("Elara", "pc")
     engine.vault.create("Delara", "npc")
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "Dallara rolls")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "Dallara rolls")
     m = say(engine, ALICE)
 
     def llm(system, user, schema):

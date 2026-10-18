@@ -1,5 +1,5 @@
 [project]
-name = "bard"
+name = "troubadour"
 version = "0.1.0"
 description = "Live, speaker-labeled transcription of an in-person D&D table, all local"
 readme = "README.md"
@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.scripts]
-bard = "bard:main"
-bard-sim = "bard.sim:main"
+troubadour = "troubadour:main"
+troubadour-sim = "troubadour.sim:main"
 
 [dependency-groups]
 dev = [

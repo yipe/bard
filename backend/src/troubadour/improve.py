@@ -127,7 +127,7 @@ def fix_spellings(job, engine: Engine, sid: str, emit: Callable[[], None]) -> No
     record = json.loads((folder / "transcript.json").read_text())
     speller = engine.speller()
     if speller is None:
-        raise ValueError("Spelling cleanup is turned off (BARD_CLEANUP=0).")
+        raise ValueError("Spelling cleanup is turned off (TROUBADOUR_CLEANUP=0).")
 
     def progress(done: int, total: int) -> None:
         job.done, job.total = done, total

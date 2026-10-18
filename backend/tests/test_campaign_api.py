@@ -7,14 +7,14 @@ import pytest
 from fastapi.testclient import TestClient
 from test_memory import FakeLLM
 
-from bard import config, server
+from troubadour import config, server
 
 LOCAL = "http://127.0.0.1:8765"
 
 
 @pytest.fixture
 def api(dirs, monkeypatch):
-    monkeypatch.delenv("BARD_VAULT", raising=False)
+    monkeypatch.delenv("TROUBADOUR_VAULT", raising=False)
     assert str(config.vault_dir()).startswith(str(dirs[0]))  # never the real vault
     return TestClient(server.app, base_url=LOCAL)
 
@@ -50,7 +50,7 @@ def test_campaign_names_its_obsidian_vault_by_registry_id(api, tmp_path, monkeyp
     root = api.get("/api/campaign").json()["vault"]
     registry = tmp_path / "obsidian.json"
     registry.write_text(json.dumps({"vaults": {"543fe3e0024d1d47": {"path": root}}}))
-    monkeypatch.setenv("BARD_OBSIDIAN_REGISTRY", str(registry))
+    monkeypatch.setenv("TROUBADOUR_OBSIDIAN_REGISTRY", str(registry))
     assert api.get("/api/campaign").json()["obsidian"] == {"id": "543fe3e0024d1d47", "folder": ""}
 
 

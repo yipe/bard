@@ -136,7 +136,7 @@ export type ServerEvent =
   | { type: "library.updated"; data: LibraryPlayer[] }
   | { type: "cloud.updated"; data: CloudStatus }
 
-/* ---- Bard Cloud (opt-in backup of the open campaign's vault) ---- */
+/* ---- Troubadour Cloud (opt-in backup of the open campaign's vault) ---- */
 export interface CloudBackup {
   at: number /* epoch s */
   snapshot: string
@@ -157,11 +157,11 @@ export interface CloudStatus {
   last_backup: CloudBackup | null
   last_error: { at: number; message: string } | null /* the last backup failed; cleared by a good one */
 }
-/** A campaign in Bard Cloud (backed up from any Mac), to restore from. */
+/** A campaign in Troubadour Cloud (backed up from any Mac), to restore from. */
 export interface CloudVault {
   id: string
   name: string
-  bard_campaign_id: string
+  campaign_id: string
   head_snapshot: string | null
   created_at: string
 }

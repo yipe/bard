@@ -5,8 +5,8 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"bard@workspace:.":
+"troubadour@workspace:.":
   version: 0.0.0-use.local
-  resolution: "bard@workspace:."
+  resolution: "troubadour@workspace:."
   languageName: unknown
   linkType: soft

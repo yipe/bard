@@ -1,10 +1,10 @@
-"""The campaign vault: Obsidian markdown that Bard reads and writes without losing human edits."""
+"""The campaign vault: Obsidian markdown that Troubadour reads and writes without losing human edits."""
 
 import os
 
 import pytest
 
-from bard.campaign import Entity, Vault, parse, render, safe_name
+from troubadour.campaign import Entity, Vault, parse, render, safe_name
 
 
 @pytest.fixture
@@ -42,6 +42,15 @@ def test_human_edits_survive_a_rewrite(vault):
     assert "mood: grumpy" in text
     assert "villain" in text
     assert "## My theories\nShe is secretly the queen." in text
+
+
+def test_old_bard_tag_is_replaced_by_the_troubadour_tag(vault):
+    note = vault.root / "People" / "Magenta.md"
+    note.parent.mkdir(parents=True)
+    note.write_text("---\ntype: npc\ntags: [villain, bard/npc]\n---\n# Magenta\nRuns the tavern.\n")
+    assert vault.get("Magenta").tags == ["villain"]
+    vault.add_fact("Magenta", "Has a pet raven.")
+    assert "tags: [troubadour/npc, villain]" in note.read_text()
 
 
 def test_unreadable_frontmatter_is_read_only_and_never_rewritten(vault):
@@ -171,7 +180,7 @@ def test_index_lists_everything(vault):
 
 # ------------------------------------------------------------- corrector
 
-from bard.campaign import Corrector  # noqa: E402
+from troubadour.campaign import Corrector  # noqa: E402
 
 
 def test_corrector_fixes_heard_as_and_case():

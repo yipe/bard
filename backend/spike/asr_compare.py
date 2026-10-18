@@ -49,7 +49,7 @@ CONFIGS = {
 def glossary_prompt(state: dict) -> str:
     """What a user would have before any notes: Setup's names + a few D&D words. Short: a long
     term list is what Whisper echoes back as "speech" on quiet clips."""
-    from bard.engine import migrate_state, seated_players
+    from troubadour.engine import migrate_state, seated_players
 
     players = seated_players(state)
     names = [p["character"] for p in players if p["character"] and p["character"] != "DM"]
@@ -186,7 +186,7 @@ def main() -> None:
     p.add_argument("--data", type=Path, default=BACKEND / "data")
     p.add_argument("--out", type=Path)
     args = p.parse_args()
-    from bard.audio import load_audio
+    from troubadour.audio import load_audio
 
     sdir = args.data / "sessions" / args.session
     record = json.loads((sdir / "transcript.json").read_text())

@@ -9,20 +9,20 @@ import os
 import tempfile
 from pathlib import Path
 
-# Must happen before anything imports bard.config (server.py builds an Engine at import).
-_TMP = Path(tempfile.mkdtemp(prefix="bard-tests-"))
-os.environ["BARD_DATA"] = str(_TMP / "data")
-os.environ["BARD_SAMPLES"] = str(_TMP / "samples")
-os.environ["BARD_OBSIDIAN_REGISTRY"] = str(_TMP / "obsidian.json")  # never this Mac's Obsidian vaults
+# Must happen before anything imports troubadour.config (server.py builds an Engine at import).
+_TMP = Path(tempfile.mkdtemp(prefix="troubadour-tests-"))
+os.environ["TROUBADOUR_DATA"] = str(_TMP / "data")
+os.environ["TROUBADOUR_SAMPLES"] = str(_TMP / "samples")
+os.environ["TROUBADOUR_OBSIDIAN_REGISTRY"] = str(_TMP / "obsidian.json")  # never this Mac's Obsidian vaults
 (_TMP / "samples").mkdir()
 
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
-from bard import config  # noqa: E402
-from bard.audio import wav_bytes  # noqa: E402
-from bard.engine import Bus, Engine, LiveSession  # noqa: E402
-from bard.voices import VoiceMatcher  # noqa: E402
+from troubadour import config  # noqa: E402
+from troubadour.audio import wav_bytes  # noqa: E402
+from troubadour.engine import Bus, Engine, LiveSession  # noqa: E402
+from troubadour.voices import VoiceMatcher  # noqa: E402
 
 SR = config.SR
 
@@ -84,7 +84,7 @@ def engine(dirs, monkeypatch):
     eng.ready.set()
     sess = LiveSession(NullSource(), {"kind": "file", "name": "x.wav", "speed": 1.0})
     eng.live, eng.buffer, eng.status = sess, sess.buffer, "running"
-    monkeypatch.setattr("bard.asr.transcribe", lambda audio: "I deal 12 slashing damage")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda audio: "I deal 12 slashing damage")
     monkeypatch.setattr(config, "ASR_PROMPT", False)  # tests that want the Whisper prompt turn it on
 
     def no_network(*a, **k):
@@ -112,4 +112,4 @@ def write_wav(path: Path, audio: np.ndarray) -> Path:
 @pytest.fixture(autouse=True)
 def hermetic_dnd_terms(tmp_path, monkeypatch):
     """Tests use the built-in D&D names, never a local list in data/dnd_terms.json."""
-    monkeypatch.setattr("bard.dnd_terms.generated_path", lambda: tmp_path / "no-dnd-terms.json")
+    monkeypatch.setattr("troubadour.dnd_terms.generated_path", lambda: tmp_path / "no-dnd-terms.json")

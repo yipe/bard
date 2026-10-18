@@ -1,8 +1,8 @@
-"""Soak test: replay hours of real table audio through a throwaway bard server and watch it.
+"""Soak test: replay hours of real table audio through a throwaway troubadour server and watch it.
 
 Run a separate server so your real one (players, voices, open tabs) is untouched:
 
-  BARD_PORT=8766 BARD_DATA=/tmp/bard-soak BARD_SAMPLES=samples/soak uv run bard
+  TROUBADOUR_PORT=8766 TROUBADOUR_DATA=/tmp/troubadour-soak TROUBADOUR_SAMPLES=samples/soak uv run troubadour
   uv run spike/soak.py --port 8766 --file soak_4h.wav --speed 4
 
 Every --sample-every seconds it records server RSS, audio lag, message/voice

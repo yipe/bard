@@ -1,4 +1,4 @@
-# Bard — live TTRPG transcription (tech demo)
+# Troubadour — live TTRPG transcription (tech demo)
 
 Goal: check feasibility of near-real-time, speaker-labeled transcription of an
 in-person D&D 5e table (one shared mic). Game-mechanics highlighting (regex + LLM tags)
@@ -9,7 +9,7 @@ Everything runs locally on one Apple Silicon Mac (M5 Max, 128 GB).
 
 1. Local LLM: LM Studio server with `google/gemma-4-26b-a4b-qat` loaded
    (`lms server start && lms load google/gemma-4-26b-a4b-qat --yes`; it serves on
-   port 1235 here). Override with `BARD_LLM_URL` / `BARD_LLM_MODEL`.
+   port 1235 here). Override with `TROUBADOUR_LLM_URL` / `TROUBADOUR_LLM_MODEL`.
 2. `yarn setup` (once: `uv sync` + `pnpm install`), then `yarn build` after UI changes.
 3. `HF_TOKEN=… yarn start` → http://127.0.0.1:8765. Needs a Hugging Face
    token with access to `pyannote/speaker-diarization-community-1`
@@ -37,12 +37,12 @@ Benchmark scripts need the extra group: `cd backend && uv run --group spike spik
 
 Stress test (separate server, own data dir, nothing audible): build a long WAV
 in `backend/samples/soak/`, start
-`BARD_PORT=8766 BARD_DATA=/tmp/bard-soak BARD_SAMPLES=$PWD/samples/soak BARD_MAX_REPLAY_SPEED=8 caffeinate -i uv run bard`,
+`TROUBADOUR_PORT=8766 TROUBADOUR_DATA=/tmp/troubadour-soak TROUBADOUR_SAMPLES=$PWD/samples/soak TROUBADOUR_MAX_REPLAY_SPEED=8 caffeinate -i uv run troubadour`,
 then run `spike/ui_probe.py` (muted headless Chrome watching the UI over the
 DevTools protocol) and `spike/soak.py` (starts the replay, samples memory/lag,
 names voices every 10 min). Both write CSVs to `samples/soak/`.
 
-Layout: `backend/src/bard/` engine (`engine.py` threads + state, `voices.py`
+Layout: `backend/src/troubadour/` engine (`engine.py` threads + state, `voices.py`
 matcher, `asr.py`, `audio.py` sources, `server.py`
 FastAPI). `web/src/` UI (contract in `lib/types.ts`). `backend/spike/`
 benchmark scripts plus `harden_check.py`, a non-destructive regression check
@@ -67,8 +67,8 @@ information arrives.
 
 | # | Stage | Tech | Target latency |
 |---|---|---|---|
-| 1 | Capture + VAD | `sounddevice` at the mic's rate → 16 kHz mono, Silero VAD → utterances (`bard/segment.py`: 400 ms silence ends a line, 200 ms padding, 12 s cap) | — |
-| 2 | Speaker ID | `VoiceMatcher` (`bard/voices.py`): embed each utterance (padded to ≥ 1.5 s), nearest known voiceprint; best score < 0.40 → unknown, grouped into a pending "Voice N"; confident ≥ 3 s matches adapt the voiceprint | 0.5–1 s |
+| 1 | Capture + VAD | `sounddevice` at the mic's rate → 16 kHz mono, Silero VAD → utterances (`troubadour/segment.py`: 400 ms silence ends a line, 200 ms padding, 12 s cap) | — |
+| 2 | Speaker ID | `VoiceMatcher` (`troubadour/voices.py`): embed each utterance (padded to ≥ 1.5 s), nearest known voiceprint; best score < 0.40 → unknown, grouped into a pending "Voice N"; confident ≥ 3 s matches adapt the voiceprint | 0.5–1 s |
 | 3 | ASR | `mlx-whisper` large-v3-turbo; prompt: the table's names, glossary names said lately, the rest of the glossary (≤ 20 names) and the last lines, fitted to Whisper's 223-token prompt window; glossary fix-up of names afterwards | 1.5–4 s |
 | 4 | Refine | re-score past utterances against current (matured) voiceprints and relabel; later also re-run ASR over larger windows. pyannote is *not* used for identity (benchmark: it lowers accuracy) | background |
 
@@ -170,7 +170,7 @@ A client that falls behind is disconnected and resyncs from a fresh snapshot.
      nothing keeps its text. Waits while a live session runs. The original stays as
      `transcript.orig.json` (`POST …/restore` puts it back).
    - **Recording**: mic sessions also write `audio.wav` at the mic's own rate
-     (48 kHz 16-bit, ~345 MB/h; `BARD_RECORD=0` turns it off). The mic opens
+     (48 kHz 16-bit, ~345 MB/h; `TROUBADOUR_RECORD=0` turns it off). The mic opens
      at its native rate; a soxr stream feeds the pipeline 16 kHz. Written on a
      background thread, header patched each second (crash-safe). A disk error
      stops the recording, not the session, and is toasted as it happens.
@@ -179,7 +179,7 @@ A client that falls behind is disconnected and resyncs from a fresh snapshot.
    - **Replay**: `{"kind": "session", "id", "speed"}` source; capped at what the
      session heard (`duration_s`), so a stopped replay of a long sample stays short.
      `GET /api/sessions/{id}/audio.wav` downloads the recording.
-   - **bard-sim**: `uv run bard-sim <id> [--setup start|end|current] [--speed 4]`
+   - **troubadour-sim**: `uv run troubadour-sim <id> [--setup start|end|current] [--speed 4]`
      re-runs a session headless in a throwaway data dir and writes
      `sims/<run>/transcript.*` + `compare.json` (speaker agreement with unnamed
      voices aligned by overlap, per-minute text similarity).
@@ -227,12 +227,12 @@ a campaign-specific character and GM flag, and has its own vault and saved sessi
 ## Campaign memory (Obsidian vault)
 
 `Engine.vault_dir()`: the open campaign's notes. For `main`, `config.vault_dir()`:
-`data/campaign`, or `BARD_VAULT` (e.g. a folder in an existing
-vault). Plain markdown, so people, Obsidian and agents can all read and edit it; Bard
+`data/campaign`, or `TROUBADOUR_VAULT` (e.g. a folder in an existing
+vault). Plain markdown, so people, Obsidian and agents can all read and edit it; Troubadour
 re-reads notes when their file changes (edits in Obsidian count).
 
 - One note per entity in `People/ Places/ Factions/ Items/ Lore/` (file name = name).
-  Frontmatter Bard owns: `type`, `aliases`, `heard_as` (ASR misspellings it corrects),
+  Frontmatter Troubadour owns: `type`, `aliases`, `heard_as` (ASR misspellings it corrects),
   `heard_as_suggested` / `heard_as_rejected`, `status` (confirmed | suggested), `tags`.
   Body: description, `## Facts`, `## Suggested facts`. Other keys, tags and sections are
   kept verbatim; a note whose frontmatter doesn't parse is read-only, never rewritten.
@@ -256,7 +256,7 @@ re-reads notes when their file changes (edits in Obsidian count).
   isn't an everyday word, filler or contraction.
 - Review decisions go through `POST …/entities/{name}/review` (changes, not list
   replacement: rapid clicks can't undo each other); the UI also serializes its writes.
-- Model: `BARD_MEMORY_MODEL` (default the loaded gemma; `BARD_MEMORY_REASONING` for
+- Model: `TROUBADOUR_MEMORY_MODEL` (default the loaded gemma; `TROUBADOUR_MEMORY_REASONING` for
   gpt-oss). On the 2.6 h session gemma wrote it up in ~5 min; gpt-oss-120b took 19 min
   and proposed 3× more, noisier, suggestions.
 - **Live use**: new lines go through the glossary corrector (heard-as → name, name
@@ -274,15 +274,15 @@ re-reads notes when their file changes (edits in Obsidian count).
   real 2.6 h campaign: ~2 s per question with gemma. Gemma closes its JSON string early at an
   inner double quote, so it's told to quote with single quotes.
 
-## Bard Cloud (opt-in backup)
+## Troubadour Cloud (opt-in backup)
 
-The one thing Bard sends off the Mac, and only after the user connects: a copy of the open
-campaign's vault, kept as snapshots by a separate service (Bard Cloud: Next.js on Vercel, Clerk,
-Neon, private Vercel Blob) that shows it read-only in a browser. Bard works the same without it.
+The one thing Troubadour sends off the Mac, and only after the user connects: a copy of the open
+campaign's vault, kept as snapshots by a separate service (Troubadour Cloud: Next.js on Vercel, Clerk,
+Neon, private Vercel Blob) that shows it read-only in a browser. Troubadour works the same without it.
 
 - `cloud.py`. Sign-in: OAuth 2 authorization code + PKCE (S256) with a loopback redirect to
-  `http://127.0.0.1:8765/api/cloud/callback` (fixed: another `BARD_PORT` can't sign in); the
-  service says where to sign in (`GET /api/v1/client`), so Bard only knows `BARD_CLOUD_URL`. The
+  `http://127.0.0.1:8765/api/cloud/callback` (fixed: another `TROUBADOUR_PORT` can't sign in); the
+  service says where to sign in (`GET /api/v1/client`), so Troubadour only knows `TROUBADOUR_CLOUD_URL`. The
   `state` is single-use and expires in 10 min. Tokens (refresh included) in `data/cloud.json`,
   mode 600; a refused refresh disconnects.
 - Backup (a `campaign.job`, kind `backup`, on the memory job thread, so never mid-write-up): list
@@ -320,7 +320,7 @@ Neon, private Vercel Blob) that shows it read-only in a browser. Bard works the 
 
 ## Spelling cleanup (behind the transcriber)
 
-D&D vocabulary: Bard ships the SRD 5.1/5.2 names (`srd_terms.json`, ~1.6k spells, creatures,
+D&D vocabulary: Troubadour ships the SRD 5.1/5.2 names (`srd_terms.json`, ~1.6k spells, creatures,
 items, conditions, species, classes and rules terms; CC-BY-4.0, attributed, each name checked
 against the SRD PDFs). An optional, larger list in the same shape at `data/dnd_terms.json` is
 used on top when present; it's never committed. Official names are held to a stricter match
@@ -345,7 +345,7 @@ names Setup and the voices panel know, and a built-in D&D vocabulary, `dnd_terms
   underline "Heard as …". An answer the LLM gives twice becomes a heard-as *suggestion*, so
   once approved the instant code path handles it.
 - After a session: `POST /api/sessions/{id}/spelling` (seconds for 2.6 h: 23 fixes, 19 lines
-  asked); Improve transcript runs it too. `BARD_CLEANUP=0` turns it off.
+  asked); Improve transcript runs it too. `TROUBADOUR_CLEANUP=0` turns it off.
 - Spelling suggestions leave out D&D vocabulary, acronyms and fillers; any suggestion can be
   ✕'d (unknown names go to the vault note `Ignored words.md`).
 
@@ -367,7 +367,7 @@ names Setup and the voices panel know, and a built-in D&D vocabulary, `dnd_terms
   corrections (`data/mics.json`, `PATCH /api/mics/{name}`), plus measured verdicts. Shown as a
   ✓/✗/? checklist: hears the whole table (omni/stereo/boundary), picks up distant voices (not
   dynamic), wired, ≥ 44.1 kHz, measured well.
-- **Mic choice** (Setup) is remembered in the browser (`localStorage` `bard.mic`) and an
+- **Mic choice** (Setup) is remembered in the browser (`localStorage` `troubadour.mic`) and an
   amber note says when that mic isn't connected. Before, starting any session (which leaves
   Setup) reset it to the macOS default: the 2026-10-15 game was tested on a Yeti, then ran
   2.6 h on the MacBook's built-in mic (beamforming toward the screen: the near player 4 dB
@@ -457,7 +457,7 @@ community" on noise (17 lines this session; turbo never did).
 
 ## Utterance cutting
 
-`bard/segment.py` is Silero's VADIterator (proven equal by a test) with the padding as a setting
+`troubadour/segment.py` is Silero's VADIterator (proven equal by a test) with the padding as a setting
 and padding that never reaches into the previous line. `spike/segment_sweep.py` caches Silero's
 probabilities once and replays them through it. Speaker purity on the benchmark clips (AMI + CR,
 107 min, true turns); WER on the 2026-10-08 gold by words whose middle falls inside each gold

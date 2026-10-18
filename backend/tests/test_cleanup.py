@@ -2,8 +2,8 @@
 
 import pytest
 
-from bard import cleanup
-from bard.campaign import Entity
+from troubadour import cleanup
+from troubadour.campaign import Entity
 
 ENTITIES = [
     Entity("Elara", "pc", description="Theo's paladin."),
@@ -134,8 +134,8 @@ def test_phrases_keep_their_words(table):
 
 import json  # noqa: E402
 
-from bard import dnd_terms  # noqa: E402
-from bard.campaign import everyday  # noqa: E402
+from troubadour import dnd_terms  # noqa: E402
+from troubadour.campaign import everyday  # noqa: E402
 
 
 def test_a_local_list_adds_to_the_built_in_names(tmp_path, monkeypatch):

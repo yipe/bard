@@ -16,7 +16,7 @@ import { api } from "@/lib/api"
 import { attempt, campaignActions, useCampaign } from "@/lib/campaignStore"
 import { JobBar } from "./JobProgress"
 
-/** Paste session notes; Bard's local AI reads them into the glossary in the background. */
+/** Paste session notes; Troubadour's local AI reads them into the glossary in the background. */
 export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [title, setTitle] = useState("")
   const [text, setText] = useState("")
@@ -58,8 +58,8 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         <DialogHeader>
           <DialogTitle>Import notes</DialogTitle>
           <DialogDescription>
-            Paste session notes or a campaign doc. It can be long — Bard reads it with the local AI and adds
-            people, places and facts to the glossary.
+            Paste session notes or a campaign doc. It can be long — Troubadour reads it with the local AI and
+            adds people, places and facts to the glossary.
           </DialogDescription>
         </DialogHeader>
 

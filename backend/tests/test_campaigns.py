@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 from conftest import RecordingBus, tone, write_wav
 
-from bard import config
-from bard.engine import MAIN_CAMPAIGN, Engine, Message, Voice, migrate_state, seated_players, short_id
+from troubadour import config
+from troubadour.engine import MAIN_CAMPAIGN, Engine, Message, Voice, migrate_state, seated_players, short_id
 
 ALICE, BOB = 200.0, 800.0
 
@@ -249,7 +249,7 @@ def test_switching_lets_the_last_spelling_fixes_land_before_saving(engine, monke
 
 
 def test_switching_waits_for_the_cleanup_only_so_long(engine, monkeypatch):
-    monkeypatch.setattr("bard.engine.SETTLE_S", 0.2)
+    monkeypatch.setattr("troubadour.engine.SETTLE_S", 0.2)
     engine.cleanup_q.put("m-stuck")  # nobody will ever take it (the cleanup loop is wedged)
     t0 = time.monotonic()
     idle(engine).open_campaign(engine.create_campaign("Morvath")["id"])

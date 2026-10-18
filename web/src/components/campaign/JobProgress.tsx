@@ -16,7 +16,7 @@ export function JobChip({ job: j }: { job: CampaignJob }) {
           : j.kind === "backup"
             ? "Cloud backup"
             : j.kind === "restore"
-              ? "Restore from Bard Cloud"
+              ? "Restore from Troubadour Cloud"
               : j.title || "Import"
   if (j.state === "error")
     return (

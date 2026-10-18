@@ -1,10 +1,10 @@
 {
-  "name": "bard",
+  "name": "troubadour",
   "private": true,
   "packageManager": "yarn@4.9.1",
   "scripts": {
     "setup": "cd backend && uv sync --all-groups && cd ../web && pnpm install",
-    "start": "cd backend && uv run bard",
+    "start": "cd backend && uv run troubadour",
     "dev:web": "cd web && pnpm dev",
     "build": "cd web && pnpm build",
     "test": "yarn test:backend && yarn test:web",

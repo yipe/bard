@@ -1,6 +1,6 @@
-# Bard: agent guide
+# Troubadour: agent guide
 
-Bard live-transcribes an in-person D&D table from one shared mic: who is speaking, what they
+Troubadour live-transcribes an in-person D&D table from one shared mic: who is speaking, what they
 said, and a campaign wiki that grows every session. **Everything runs
 locally** on one Mac (Apple Silicon): Python engine + FastAPI in `backend/`, React UI in `web/`,
 LLMs in LM Studio. No cloud calls at runtime, ever.
@@ -24,7 +24,7 @@ The shell may have `CI=true`: a first `yarn install` needs `--no-immutable`.
 ## Layout
 
 ```
-backend/src/bard/   engine, server, ASR, voices, audio quality, campaign memory, spelling cleanup
+backend/src/troubadour/   engine, server, ASR, voices, audio quality, campaign memory, spelling cleanup
 backend/tests/      pytest; no models or network needed
 backend/spike/      research and ops scripts (benchmarks, soak tests, harden_check)
 backend/data/       USER DATA, git-ignored: state, recordings, sessions, campaign vault
@@ -36,16 +36,16 @@ web/dist/           built UI, served by the backend (git-ignored)
 
 1. **Never touch `backend/data/`** in tests or experiments. It holds real players, voiceprints, hours
    of recordings and the user's Obsidian vault. Tests use tmp dirs (the `dirs`/`engine` fixtures).
-   For a scratch server: `BARD_PORT=8767 BARD_DATA=/tmp/<name> uv run bard`.
+   For a scratch server: `TROUBADOUR_PORT=8767 TROUBADOUR_DATA=/tmp/<name> uv run troubadour`.
 2. **Never play audio** on the machine. Browsers you drive must be headless with `--mute-audio`.
    Don't start mic sessions; they record the room. Unit tests fake the mic.
 3. **Local only.** No hosted APIs in the product. The LLM is LM Studio at `http://127.0.0.1:1235/v1`.
-   The one exception is opt-in **Bard Cloud** backup (`cloud.py`): nothing is sent until the user
+   The one exception is opt-in **Troubadour Cloud** backup (`cloud.py`): nothing is sent until the user
    clicks Connect, it only uploads the vault, and tests never reach it (`httpx.MockTransport`).
 4. **Only restart the server (`:8765`) when `GET /api/state` shows `session.status == "idle"`.**
    A real game may be running.
 5. **Licensed data and privacy (this repo is public):** only SRD names (CC-BY-4.0, attributed) are
-   committed (`backend/src/bard/srd_terms.json`); check additions against the SRD text. No other
+   committed (`backend/src/troubadour/srd_terms.json`); check additions against the SRD text. No other
    D&D product content, no real people's names (tests use made-up players), and don't name where
    a larger local list (`backend/data/dnd_terms.json`) comes from. `backend/local/` is git-ignored
    for local-only tools.

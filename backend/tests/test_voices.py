@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from conftest import SR, FakeEmbedder, tone
 
-from bard.voices import VoiceMatcher, centroid, embed_span, normalize
+from troubadour.voices import VoiceMatcher, centroid, embed_span, normalize
 
 
 @pytest.fixture

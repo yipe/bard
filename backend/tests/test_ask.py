@@ -8,9 +8,9 @@ import pytest
 from conftest import RecordingBus
 from fastapi.testclient import TestClient
 
-from bard import ask, config, server
-from bard.campaign import Vault
-from bard.transcript import build
+from troubadour import ask, config, server
+from troubadour.campaign import Vault
+from troubadour.transcript import build
 
 SID = "2026-10-08_193401-eebf"
 LINES = [
@@ -208,7 +208,7 @@ def test_answers_belong_to_their_campaign(setup):
 
 
 def test_ask_api(dirs, monkeypatch):
-    monkeypatch.delenv("BARD_VAULT", raising=False)
+    monkeypatch.delenv("TROUBADOUR_VAULT", raising=False)
     assert str(config.vault_dir()).startswith(str(dirs[0]))  # never the real vault
     monkeypatch.setattr(server.asker, "llm", FakeLLM())
     monkeypatch.setattr(server.asker, "answers", {})

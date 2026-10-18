@@ -92,7 +92,7 @@ export function TrainDialog({
           <DialogTitle>{showStart ? `Train ${player.name}'s voice` : `Training ${player.name}`}</DialogTitle>
           <DialogDescription>
             {showStart
-              ? `Optional: ${SECONDS} seconds of ${player.name} talking helps Bard recognise them. Press Start when ready.`
+              ? `Optional: ${SECONDS} seconds of ${player.name} talking helps Troubadour recognise them. Press Start when ready.`
               : `Only ${player.name} talks now — say anything, e.g. introduce your character.`}
           </DialogDescription>
         </DialogHeader>

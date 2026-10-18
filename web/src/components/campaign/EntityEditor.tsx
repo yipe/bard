@@ -59,7 +59,7 @@ export function EntityEditor({ entity }: { entity: Entity }) {
       {e.status === "suggested" && !e.read_only && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-primary/10 p-3 text-sm">
           <Sparkles className="size-4 shrink-0 text-primary" />
-          <span className="flex-1">Bard suggested this from a session.</span>
+          <span className="flex-1">Troubadour suggested this from a session.</span>
           <Button size="sm" onClick={() => patch(e.name, () => ({ status: "confirmed" }))}>
             <Check /> Keep
           </Button>
@@ -148,7 +148,7 @@ export function EntityEditor({ entity }: { entity: Entity }) {
 
         <Section
           title="Heard as"
-          hint="How speech-to-text misspells it; Bard fixes these in new transcripts."
+          hint="How speech-to-text misspells it; Troubadour fixes these in new transcripts."
         >
           <ChipEditor
             label="spelling"
@@ -170,7 +170,7 @@ export function EntityEditor({ entity }: { entity: Entity }) {
               <span
                 key={x}
                 data-testid="suggested-spelling"
-                title="Suggested by Bard"
+                title="Suggested by Troubadour"
                 className="inline-flex h-6 items-center gap-0.5 rounded-md border border-dashed border-primary/50 pr-0.5 pl-2 text-xs"
               >
                 {x}?
@@ -254,7 +254,7 @@ function Section({
   )
 }
 
-/** Accept (moves it to facts), reject, or edit-then-accept a fact Bard suggested. */
+/** Accept (moves it to facts), reject, or edit-then-accept a fact Troubadour suggested. */
 function SuggestedFact({ entity: e, fact }: { entity: Entity; fact: string }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(fact)

@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store"
 import type { MicCheck, MicInfo, SourceList } from "@/lib/types"
 import { mic, session } from "@/test/fixtures"
 import { mockFetch, type FetchCall } from "@/test/mockFetch"
-import { MIC_KEY, SOURCES_POLL_MS, StartPanel } from "./StartPanel"
+import { MIC_KEY, OLD_MIC_KEY, SOURCES_POLL_MS, StartPanel } from "./StartPanel"
 
 const BUILT_IN = { name: "MacBook Pro Microphone", default: true }
 const YETI = { name: "Yeti Stereo Microphone", default: false }
@@ -100,6 +100,25 @@ describe("StartPanel microphone list", () => {
       { source: { kind: "mic", device: YETI.name } },
       { source: { kind: "mic", device: YETI.name } },
     ])
+  })
+
+  it("picks up the mic saved under the pre-rename key and moves it to the new one", async () => {
+    server([BUILT_IN, YETI])
+    localStorage.setItem(OLD_MIC_KEY, YETI.name)
+    render(<StartPanel />)
+    await tick(0)
+    expect(picked()).toBe(YETI.name)
+    expect(localStorage.getItem(MIC_KEY)).toBe(YETI.name)
+    expect(localStorage.getItem(OLD_MIC_KEY)).toBeNull()
+  })
+
+  it("prefers the new key over the pre-rename one", async () => {
+    server([BUILT_IN, YETI])
+    localStorage.setItem(OLD_MIC_KEY, BUILT_IN.name)
+    localStorage.setItem(MIC_KEY, YETI.name)
+    render(<StartPanel />)
+    await tick(0)
+    expect(picked()).toBe(YETI.name)
   })
 
   it("stops polling while a session runs", async () => {

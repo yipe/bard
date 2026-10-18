@@ -7,9 +7,9 @@ import httpx
 import pytest
 from conftest import RecordingBus
 
-from bard import memory as mem
-from bard.campaign import Vault
-from bard.transcript import build
+from troubadour import memory as mem
+from troubadour.campaign import Vault
+from troubadour.transcript import build
 
 
 class FakeLLM:
@@ -351,7 +351,7 @@ def test_name_filter(raw, ok):
 
 
 def test_misspelling_hints():
-    from bard.campaign import Entity
+    from troubadour.campaign import Entity
 
     hints = mem.misspelling_hints(
         "Dallara, three. Dilara four. Dallara again. Water is Augie for.", [Entity("Elara"), Entity("Auggie")]

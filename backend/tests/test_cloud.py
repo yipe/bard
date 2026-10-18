@@ -1,4 +1,4 @@
-"""Bard Cloud client against an in-process fake of the service (httpx.MockTransport): no network.
+"""Troubadour Cloud client against an in-process fake of the service (httpx.MockTransport): no network.
 
 The fake follows tests/cloud_contract.schema.json, copied from the service; the drift test below fails when
 the copy and this module disagree on limits or error codes."""
@@ -18,8 +18,8 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from bard import cloud, config, server
-from bard.cloud import AutoBackup, Cloud, CloudError, NotConnected, fingerprint, path_problem, scan
+from troubadour import cloud, config, server
+from troubadour.cloud import AutoBackup, Cloud, CloudError, NotConnected, fingerprint, path_problem, scan
 
 SERVICE = "https://cloud.test"
 AUTH = "https://auth.test"
@@ -70,7 +70,7 @@ class FakeService:
                 json={
                     "authorize_url": f"{AUTH}/oauth/authorize",
                     "token_url": f"{AUTH}/oauth/token",
-                    "client_id": "bard-test",
+                    "client_id": "troubadour-test",
                     "scopes": ["profile", "email", "offline_access"],
                     "redirect_uri": REDIRECT,
                 },
@@ -112,10 +112,10 @@ class FakeService:
 
     def api(self, method: str, path: str, body) -> httpx.Response:
         if (method, path) == ("POST", "/vaults"):
-            assert set(body) == {"name", "bard_campaign_id"}
+            assert set(body) == {"name", "campaign_id"}
             assert 1 <= len(body["name"]) <= 100
             for v in self.vaults.values():
-                if v["bard_campaign_id"] == body["bard_campaign_id"]:
+                if v["campaign_id"] == body["campaign_id"]:
                     return httpx.Response(200, json=v)
             v = {"id": str(uuid.uuid4()), "head_snapshot": None, "created_at": "2026-10-17T00:00:00Z", **body}
             self.vaults[v["id"]] = v
@@ -316,7 +316,7 @@ def test_sign_in_state_works_once(client, service):
 
 def test_sign_in_needs_the_port_the_service_redirects_to(client, monkeypatch):
     monkeypatch.setattr(config, "PORT", 8767)
-    with pytest.raises(ValueError, match="this Bard runs at http://127.0.0.1:8767"):
+    with pytest.raises(ValueError, match="this Troubadour runs at http://127.0.0.1:8767"):
         client.start_login()
 
 
@@ -356,7 +356,7 @@ def test_a_revoked_sign_in_disconnects(client, service):
 
 def test_a_sign_in_the_service_no_longer_accepts_disconnects(client, service):
     """The service moved to another sign-in provider: the old tokens still refresh, but every one is refused.
-    Bard must offer Connect again rather than fail every backup."""
+    Troubadour must offer Connect again rather than fail every backup."""
     connect(client, service)
     service.foreign_sign_in = True
     with pytest.raises(NotConnected):
@@ -414,7 +414,7 @@ def test_campaigns_are_separate_vaults(client, service, vault):
     connect(client, service)
     client.backup("main", "The Sunken Gate", vault, noop)
     client.backup("c0123456789", "Second campaign", vault, noop)
-    assert sorted(v["bard_campaign_id"] for v in service.vaults.values()) == ["c0123456789", "main"]
+    assert sorted(v["campaign_id"] for v in service.vaults.values()) == ["c0123456789", "main"]
 
 
 @pytest.mark.parametrize("code", ["conflict", "missing_blobs"])
@@ -456,7 +456,7 @@ def test_network_failure_is_a_clean_error(tmp_path):
         raise httpx.ConnectError("offline")
 
     c = Cloud(url=SERVICE, path=lambda: tmp_path / "cloud.json", http=httpx.Client(transport=httpx.MockTransport(down)))
-    with pytest.raises(CloudError, match="Couldn't reach Bard Cloud"):
+    with pytest.raises(CloudError, match="Couldn't reach Troubadour Cloud"):
         c.start_login()
 
 
@@ -465,7 +465,7 @@ def test_network_failure_is_a_clean_error(tmp_path):
 
 @pytest.fixture
 def api(dirs, service, monkeypatch):
-    monkeypatch.delenv("BARD_VAULT", raising=False)
+    monkeypatch.delenv("TROUBADOUR_VAULT", raising=False)
     fake = Cloud(url=SERVICE, http=httpx.Client(transport=service.transport()))
     monkeypatch.setattr(server, "cloud", fake)
     return TestClient(server.app, base_url="http://127.0.0.1:8765")
@@ -708,10 +708,10 @@ def test_restore_never_writes_outside_the_campaign_folder(client, service, vault
 
 def test_restore_of_unknown_or_empty_vaults(client, service, vault):
     connect(client, service)
-    with pytest.raises(CloudError, match="isn't in Bard Cloud"):
+    with pytest.raises(CloudError, match="isn't in Troubadour Cloud"):
         client.restore(str(uuid.uuid4()), vault, noop)
-    service.api("POST", "/vaults", {"name": "Empty", "bard_campaign_id": "empty"})
-    empty = next(v["id"] for v in service.vaults.values() if v["bard_campaign_id"] == "empty")
+    service.api("POST", "/vaults", {"name": "Empty", "campaign_id": "empty"})
+    empty = next(v["id"] for v in service.vaults.values() if v["campaign_id"] == "empty")
     with pytest.raises(CloudError, match="hasn't been backed up yet"):
         client.restore(empty, vault, noop)
 

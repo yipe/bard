@@ -1,6 +1,6 @@
-# Bard
+# Troubadour
 
-Live transcription for an in-person D&D table, from one shared microphone. Bard shows who is
+Live transcription for an in-person D&D table, from one shared microphone. Troubadour shows who is
 speaking and what they said as the game happens, and keeps a campaign wiki (plain Markdown, an
 Obsidian vault) that grows every session.
 
@@ -47,28 +47,31 @@ HF_TOKEN=hf_… yarn start           # → http://127.0.0.1:8765
 ```
 
 Then: add the players on **Setup**, pick the microphone, start a session. An omnidirectional
-or boundary mic in the middle of the table works best; Bard's mic check tells you if yours isn't.
+or boundary mic in the middle of the table works best; Troubadour's mic check tells you if yours isn't.
 
 ## Configuration
 
-Environment variables (see `backend/src/bard/config.py`):
+Environment variables (see `backend/src/troubadour/config.py`):
 
 | Variable | Default | |
 |---|---|---|
 | `HF_TOKEN` | — | Hugging Face token (`HUGGING_FACE_TOKEN` also works) |
-| `BARD_HOST` / `BARD_PORT` | `127.0.0.1` / `8765` | where the app listens |
-| `BARD_DATA` | `backend/data` | players, voiceprints, sessions, recordings |
-| `BARD_VAULT` | `$BARD_DATA/campaign` | campaign wiki; point it at a folder in an existing Obsidian vault |
-| `BARD_LLM_URL` / `BARD_LLM_MODEL` | LM Studio, gemma | LLM for spelling cleanup |
-| `BARD_MEMORY_MODEL` / `BARD_MEMORY_REASONING` | same model / `none` | LLM for notes and write-ups |
-| `BARD_WHISPER` | `mlx-community/whisper-large-v3-turbo` | Whisper model |
-| `BARD_RECORD=0`, `BARD_CLEANUP=0`, `BARD_ASR_PROMPT=0` | on | turn off recording, spelling cleanup, name prompting |
+| `TROUBADOUR_HOST` / `TROUBADOUR_PORT` | `127.0.0.1` / `8765` | where the app listens |
+| `TROUBADOUR_DATA` | `backend/data` | players, voiceprints, sessions, recordings |
+| `TROUBADOUR_VAULT` | `$TROUBADOUR_DATA/campaign` | campaign wiki; point it at a folder in an existing Obsidian vault |
+| `TROUBADOUR_LLM_URL` / `TROUBADOUR_LLM_MODEL` | LM Studio, gemma | LLM for spelling cleanup |
+| `TROUBADOUR_MEMORY_MODEL` / `TROUBADOUR_MEMORY_REASONING` | same model / `none` | LLM for notes and write-ups |
+| `TROUBADOUR_WHISPER` | `mlx-community/whisper-large-v3-turbo` | Whisper model |
+| `TROUBADOUR_RECORD=0`, `TROUBADOUR_CLEANUP=0`, `TROUBADOUR_ASR_PROMPT=0` | on | turn off recording, spelling cleanup, name prompting |
+
+Troubadour was called Bard before. Setups from then keep working: a `BARD_*` variable is read when its
+`TROUBADOUR_*` twin isn't set.
 
 ## Privacy and safety
 
-- Bard binds to `127.0.0.1` with no auth, by design; Host and Origin checks stop other websites in
+- Troubadour binds to `127.0.0.1` with no auth, by design; Host and Origin checks stop other websites in
   your browser from reaching the API.
-- Everything Bard stores lives in `backend/data/` (git-ignored): voiceprints and recordings of the
+- Everything Troubadour stores lives in `backend/data/` (git-ignored): voiceprints and recordings of the
   people at your table. Ask before you record people.
 
 ## Development
@@ -82,7 +85,7 @@ yarn format
 
 | Path | |
 |---|---|
-| `backend/src/bard/` | Python engine and FastAPI server |
+| `backend/src/troubadour/` | Python engine and FastAPI server |
 | `backend/tests/` | pytest |
 | `backend/spike/` | benchmarks and research scripts (`uv run --group spike …`) |
 | `web/src/` | React 19, Vite, Tailwind v4, shadcn/ui |
@@ -95,8 +98,8 @@ Contributor/agent guides: [AGENTS.md](AGENTS.md), [backend/AGENTS.md](backend/AG
 
 [MIT](LICENSE).
 
-The built-in D&D vocabulary (`backend/src/bard/srd_terms.json`) holds names from the System
+The built-in D&D vocabulary (`backend/src/troubadour/srd_terms.json`) holds names from the System
 Reference Document 5.1 and 5.2 by Wizards of the Coast LLC, available at
 <https://www.dndbeyond.com/srd>, licensed under
-[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode). Bard is unofficial and not
+[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode). Troubadour is unofficial and not
 affiliated with or endorsed by Wizards of the Coast.

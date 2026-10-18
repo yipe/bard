@@ -7,9 +7,9 @@ import pytest
 from conftest import write_wav
 from fastapi.testclient import TestClient
 
-from bard import config, levels, server
-from bard.config import SR
-from bard.transcript import build
+from troubadour import config, levels, server
+from troubadour.config import SR
+from troubadour.transcript import build
 
 RNG = np.random.default_rng(7)
 

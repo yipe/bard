@@ -23,10 +23,10 @@ from scipy.signal import butter, sosfilt
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND / "src"))
 
-from bard import asr  # noqa: E402
-from bard.audio import load_audio  # noqa: E402
-from bard.campaign import Vault  # noqa: E402
-from bard.engine import CONTEXT_MIN_S, PROMPT_MENTION_LINES, PROMPT_NAMES  # noqa: E402
+from troubadour import asr  # noqa: E402
+from troubadour.audio import load_audio  # noqa: E402
+from troubadour.campaign import Vault  # noqa: E402
+from troubadour.engine import CONTEXT_MIN_S, PROMPT_MENTION_LINES, PROMPT_NAMES  # noqa: E402
 
 SR = 16000
 HP = butter(4, 100, "highpass", fs=SR, output="sos")

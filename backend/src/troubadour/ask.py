@@ -4,7 +4,7 @@
    entries the question is about.
 2. Search (code, BM25) over the open campaign's transcripts, cut into short overlapping
    windows, and every note in its vault. An entry the question is about is searched under every
-   spelling Bard knows (aliases, heard-as: the transcript says "Dilara" where the notes say
+   spelling Troubadour knows (aliases, heard-as: the transcript says "Dilara" where the notes say
    "Elara"), and its note always goes in.
 3. Answer (LLM) from those excerpts only, citing them by id. Model output is untrusted: only
    offered excerpts can be cited, and lengths are capped.
@@ -32,7 +32,7 @@ from .campaign import Entity, Vault, norm, split_frontmatter
 from .memory import STR, MemoryLLM, _obj, _text, chunks, glossary_brief
 from .transcript import clock
 
-log = logging.getLogger("bard")
+log = logging.getLogger("troubadour")
 
 WINDOW, STRIDE = 8, 4  # transcript lines per excerpt window; windows overlap by half
 NOTE_CHARS = 1500  # notes are searched in paragraph-aligned pieces of about this size
@@ -42,7 +42,7 @@ MAX_TERMS, TERM_MAX = 12, 40
 QUESTION_WEIGHT, TERM_WEIGHT, NAME_WEIGHT = 1.0, 0.6, 1.5
 ANSWER_MAX = 1500
 KEPT_ANSWERS = 20
-SKIP_NOTES = {"glossary.md", "readme.md", "ignored words.md"}  # generated, or about Bard itself
+SKIP_NOTES = {"glossary.md", "readme.md", "ignored words.md"}  # generated, or about Troubadour itself
 NOT_FOUND = "I couldn't find anything about that in the transcripts or notes."
 
 TYPE_LABELS = {
@@ -364,7 +364,7 @@ def entry_passage(e: Entity, root: Path) -> Passage:
 
 def note_passages(vault: Vault) -> list[Passage]:
     """Every note in the vault: entries whole, other notes (session pages, pasted notes, the
-    user's own) in pieces. Not Bard's generated index, the trash, or transcript copies."""
+    user's own) in pieces. Not Troubadour's generated index, the trash, or transcript copies."""
     root = vault.root
     entities = vault.entities()
     out = [entry_passage(e, root) for e in entities]
@@ -471,7 +471,7 @@ class Asker:
         self.sessions = sessions  # folders of the open campaign's sessions
         self.written_up = written_up  # session id → its write-up page (vault-relative)
         self.campaign = campaign
-        self.seed = seed  # (name, type, description) Bard knows from Setup and the voices panel
+        self.seed = seed  # (name, type, description) Troubadour knows from Setup and the voices panel
         self.llm = llm or MemoryLLM()
         self.answers: dict[str, Answer] = {}
         self._lock = threading.Lock()

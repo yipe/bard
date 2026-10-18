@@ -1,5 +1,5 @@
 """Campaign memory, stored as an Obsidian vault: plain markdown that people, Obsidian, and
-agents can all read and edit. Bard re-reads it from disk, so edits made in Obsidian count.
+agents can all read and edit. Troubadour re-reads it from disk, so edits made in Obsidian count.
 
 Layout (config.VAULT_DIR, default data/campaign):
 
@@ -15,10 +15,10 @@ An entity note:
     ---
     type: npc
     aliases: [Maggie]              # other names; Obsidian uses them in link search
-    heard_as: [Magento]            # how speech-to-text misspells it; Bard corrects these
-    heard_as_suggested: [Majenta]  # proposed by Bard, waiting for review
+    heard_as: [Magento]            # how speech-to-text misspells it; Troubadour corrects these
+    heard_as_suggested: [Majenta]  # proposed by Troubadour, waiting for review
     status: confirmed              # "suggested" = proposed by a session write-up
-    tags: [bard/npc]
+    tags: [troubadour/npc]
     ---
     # Magenta
     Short description.
@@ -29,7 +29,7 @@ An entity note:
     ## Suggested facts
     - Owes Kessia a favour. ([[2026-10-15 Session]])
 
-Bard owns the frontmatter keys above, the description and those two sections. Other
+Troubadour owns the frontmatter keys above, the description and those two sections. Other
 frontmatter keys, a person's own tags, and other sections are kept as written. A note whose
 frontmatter doesn't parse is shown read-only and never rewritten.
 """
@@ -56,6 +56,8 @@ TYPES = {
     "term": "Lore",
 }
 FOLDERS = sorted(set(TYPES.values()))
+# Tags the app adds itself; "bard/" is the pre-rename prefix, so old notes don't keep it as a user tag.
+OWN_TAG_PREFIXES = ("troubadour/", "bard/")
 OWNED_KEYS = ("type", "aliases", "heard_as", "heard_as_suggested", "heard_as_rejected", "status", "tags")
 FACTS, SUGGESTED = "Facts", "Suggested facts"
 STATUSES = ("confirmed", "suggested")
@@ -200,8 +202,8 @@ class Entity:
     description: str = ""
     facts: list[str] = field(default_factory=list)
     suggested_facts: list[str] = field(default_factory=list)
-    tags: list[str] = field(default_factory=list)  # a person's own tags; Bard adds bard/<type>
-    extra_meta: dict = field(default_factory=dict)  # frontmatter keys Bard doesn't own
+    tags: list[str] = field(default_factory=list)  # a person's own tags; Troubadour adds troubadour/<type>
+    extra_meta: dict = field(default_factory=dict)  # frontmatter keys Troubadour doesn't own
     extra_sections: list[tuple[str, str]] = field(default_factory=list)  # (heading, body), verbatim
     path: Path | None = None
     read_only: bool = False  # frontmatter didn't parse: show it, never overwrite it
@@ -316,7 +318,7 @@ def parse(name: str, text: str) -> Entity:
     e.heard_as_suggested = [h for h in _strings(meta.get("heard_as_suggested")) if norm(h) not in {norm(x) for x in e.heard_as}]
     e.heard_as_rejected = _strings(meta.get("heard_as_rejected"))
     e.status = status if status in STATUSES else "confirmed"
-    e.tags = [t for t in _strings(meta.get("tags")) if not t.startswith("bard/")]
+    e.tags = [t for t in _strings(meta.get("tags")) if not t.startswith(OWN_TAG_PREFIXES)]
     e.extra_meta = {k: v for k, v in meta.items() if k not in OWNED_KEYS}
     return e
 
@@ -328,7 +330,7 @@ def render(e: Entity) -> str:
     if e.heard_as_rejected:
         meta["heard_as_rejected"] = e.heard_as_rejected
     meta["status"] = e.status
-    meta["tags"] = [f"bard/{e.type}", *e.tags]
+    meta["tags"] = [f"troubadour/{e.type}", *e.tags]
     meta |= e.extra_meta
     front = yaml.safe_dump(meta, sort_keys=False, allow_unicode=True, default_flow_style=None, width=1000)
     out = [f"---\n{front}---", f"# {e.name}", ""]
@@ -434,7 +436,7 @@ class Vault:
 
     def _save(self, e: Entity) -> Entity:
         if e.read_only:
-            raise ValueError(f"{e.name}.md has frontmatter Bard can't read; fix it in Obsidian first.")
+            raise ValueError(f"{e.name}.md has frontmatter Troubadour can't read; fix it in Obsidian first.")
         path = self.root / TYPES[e.type] / f"{safe_name(e.name)}.md"
         old = e.path
         write_atomic(path, render(e))
@@ -461,7 +463,7 @@ class Vault:
         with self.lock:
             e = self.get(current)
             if e.read_only:
-                raise ValueError(f"{e.name}.md has frontmatter Bard can't read; fix it in Obsidian first.")
+                raise ValueError(f"{e.name}.md has frontmatter Troubadour can't read; fix it in Obsidian first.")
             if "name" in fields:
                 new = safe_name(fields.pop("name"))
                 clash = self.find(new)
@@ -516,7 +518,7 @@ class Vault:
             if src.path == dst.path:
                 raise ValueError("Can't merge a note into itself.")
             if src.read_only or dst.read_only:
-                raise ValueError("One of these notes has frontmatter Bard can't read; fix it in Obsidian first.")
+                raise ValueError("One of these notes has frontmatter Troubadour can't read; fix it in Obsidian first.")
             merged = self.update(
                 dst.name,
                 aliases=[*dst.aliases, *src.names()],
@@ -580,7 +582,7 @@ class Vault:
             facts = [str(f).strip() for f in facts if str(f).strip()]
             write_atomic(
                 self.facts_path,
-                "---\ntags: [bard/facts]\n---\n# Campaign facts\n\nThings that hold across the whole campaign.\n\n"
+                "---\ntags: [troubadour/facts]\n---\n# Campaign facts\n\nThings that hold across the whole campaign.\n\n"
                 f"## {FACTS}\n" + "".join(f"- {f}\n" for f in facts),
             )
             return facts
@@ -608,8 +610,8 @@ class Vault:
             words = unique(words)
             write_atomic(
                 self.ignored_path,
-                "---\ntags: [bard/index]\n---\n# Ignored words\n\n"
-                "Words Bard won't suggest as names. Delete a line to let it suggest that word again.\n\n"
+                "---\ntags: [troubadour/index]\n---\n# Ignored words\n\n"
+                "Words Troubadour won't suggest as names. Delete a line to let it suggest that word again.\n\n"
                 "## Words\n" + "".join(f"- {w}\n" for w in words),
             )
             return words
@@ -647,10 +649,10 @@ class Vault:
             for e in self.entities():
                 by_type.setdefault(e.type, []).append(e)
             out = [
-                "---\ntags: [bard/index]\n---",
+                "---\ntags: [troubadour/index]\n---",
                 "# Glossary",
                 "",
-                "Generated by Bard from the notes in this vault. Edit those notes, not this page.",
+                "Generated by Troubadour from the notes in this vault. Edit those notes, not this page.",
                 "",
             ]
             titles = {"pc": "Player characters", "npc": "NPCs"}
@@ -698,11 +700,11 @@ class Corrector:
 
 
 README = """---
-tags: [bard/index]
+tags: [troubadour/index]
 ---
 # Campaign wiki
 
-Kept by [Bard](https://github.com/yipe/bard), which transcribes the table, and by you. Open this
+Kept by [Troubadour](https://github.com/yipe/troubadour), which transcribes the table, and by you. Open this
 folder as an Obsidian vault, or read it with any agent: it is plain markdown.
 
 ## Layout
@@ -710,9 +712,9 @@ folder as an Obsidian vault, or read it with any agent: it is plain markdown.
 - `People/`, `Places/`, `Factions/`, `Items/`, `Lore/`: one note per named thing. The file name is its name.
 - `Sessions/`: one page per played session (summary, highlights, what happened), with the full
   transcript in `Sessions/Transcripts/`.
-- `Notes/`: session notes pasted into Bard, kept word for word.
+- `Notes/`: session notes pasted into Troubadour, kept word for word.
 - `Facts.md`: things that hold across the whole campaign.
-- [[Glossary]]: an index of every note, regenerated by Bard (edit the notes, not the index).
+- [[Glossary]]: an index of every note, regenerated by Troubadour (edit the notes, not the index).
 
 ## A note
 
@@ -720,8 +722,8 @@ folder as an Obsidian vault, or read it with any agent: it is plain markdown.
 ---
 type: npc                  # pc, npc, place, faction, item, creature, spell, term
 aliases: [Maggie]          # other names for it
-heard_as: [Magento]        # how speech-to-text misspells it; Bard corrects these in new transcripts
-status: confirmed          # "suggested" = Bard proposed it from a session; keep or discard it in Bard
+heard_as: [Magento]        # how speech-to-text misspells it; Troubadour corrects these in new transcripts
+status: confirmed          # "suggested" = Troubadour proposed it from a session; keep or discard it in Troubadour
 ---
 # Magenta
 One or two lines on who or what this is.
@@ -730,10 +732,10 @@ One or two lines on who or what this is.
 - One lasting fact per bullet, with where it came from: ([[2026-10-08 The Desert Road]])
 
 ## Suggested facts
-- Bard's proposals from a session, waiting for review in Bard's Campaign tab.
+- Troubadour's proposals from a session, waiting for review in Troubadour's Campaign tab.
 ```
 
-Bard rewrites only the properties above, the description and those two sections. Add any other
-properties, tags or `##` sections you like (theories, relationships, art): Bard keeps them as written.
-Link freely with `[[Name]]`. Deleting a note in Bard moves it to `.trash`.
+Troubadour rewrites only the properties above, the description and those two sections. Add any other
+properties, tags or `##` sections you like (theories, relationships, art): Troubadour keeps them as written.
+Link freely with `[[Name]]`. Deleting a note in Troubadour moves it to `.trash`.
 """

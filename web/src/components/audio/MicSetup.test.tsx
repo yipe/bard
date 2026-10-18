@@ -60,7 +60,7 @@ describe("Mic details", () => {
       return mics
     })
     render(<MicDetails device="USB Audio Device" />)
-    const form = await screen.findByRole("form", { name: "Tell Bard about this mic" })
+    const form = await screen.findByRole("form", { name: "Tell Troubadour about this mic" })
     fireEvent.change(within(form).getByRole("combobox", { name: "Capsule" }), {
       target: { value: "condenser" },
     })

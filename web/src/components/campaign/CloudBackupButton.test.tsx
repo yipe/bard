@@ -59,7 +59,7 @@ describe("Cloud backup", () => {
     vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window)
     mockFetch((call) => {
       if (call.url === "/api/cloud") return cloudStatus({ connected: false })
-      return new Response(JSON.stringify({ detail: "Couldn't reach Bard Cloud" }), { status: 502 })
+      return new Response(JSON.stringify({ detail: "Couldn't reach Troubadour Cloud" }), { status: 502 })
     })
     await openPopover()
     fireEvent.click(screen.getByRole("button", { name: "Connect" }))
@@ -151,15 +151,15 @@ describe("Cloud backup", () => {
 
   it("restores this campaign by default, from the campaigns backed up", async () => {
     const vaults = [
-      { id: "v-other", name: "Old table", bard_campaign_id: "c1", head_snapshot: "s9", created_at: "" },
+      { id: "v-other", name: "Old table", campaign_id: "c1", head_snapshot: "s9", created_at: "" },
       {
         id: "v-main",
         name: "The Sunken Gate",
-        bard_campaign_id: "main",
+        campaign_id: "main",
         head_snapshot: "s1",
         created_at: "",
       },
-      { id: "v-empty", name: "Never backed up", bard_campaign_id: "c2", head_snapshot: null, created_at: "" },
+      { id: "v-empty", name: "Never backed up", campaign_id: "c2", head_snapshot: null, created_at: "" },
     ]
     const { writes } = mockFetch((call) => {
       if (call.url === "/api/cloud") return cloudStatus()

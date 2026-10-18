@@ -7,7 +7,7 @@ Acceptance for any change: `pnpm typecheck && pnpm test && pnpm lint && pnpm exe
 ## Map (`src/`)
 
 - `App.tsx`: the tabs Setup | Session | History | Campaign. `lib/route.ts`: the URL mirrors navigation.
-- `lib/types.ts`: **the API contract** (mirrors `backend/src/bard/server.py`); change both together.
+- `lib/types.ts`: **the API contract** (mirrors `backend/src/troubadour/server.py`); change both together.
 - `lib/api.ts`: every HTTP call. `lib/store.ts`: the live session (WebSocket events → state).
   `lib/campaignStore.ts`: campaign state + its **write queue**. `lib/record.ts`: saved records → view data.
 - `components/session/`: live view (`ChatFeed` virtualized with react-virtuoso, `PlayerGrid`,

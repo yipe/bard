@@ -48,7 +48,7 @@ def keep_awake() -> subprocess.Popen | None:
         return None
 
 
-log = logging.getLogger("bard")
+log = logging.getLogger("troubadour")
 
 SR = config.SR
 SEGMENT = SegmentConfig()  # utterance cutting; values measured in PLAN.md ("Utterance cutting")
@@ -696,7 +696,7 @@ class Engine:
 
     def _snapshot_setup(self, sess: LiveSession, phase: str) -> None:
         """sessions/<id>/setup/<phase>.json (state.json's shape: players + voiceprints) plus the
-        voices' training clips, so `bard-sim` can re-run the session against exactly this setup.
+        voices' training clips, so `troubadour-sim` can re-run the session against exactly this setup.
         "start" is what the session began with; "end" adds the voices named during play."""
         folder = self.sessions_dir() / sess.id / "setup"
         try:
@@ -1014,7 +1014,7 @@ class Engine:
     # ------------------------------------------------------------- campaigns
 
     def vault_dir(self) -> Path:
-        """The open campaign's notes: MAIN's is config.vault_dir() (BARD_VAULT or data/campaign),
+        """The open campaign's notes: MAIN's is config.vault_dir() (TROUBADOUR_VAULT or data/campaign),
         later ones live in data/campaigns/<id>."""
         if self.campaign == MAIN_CAMPAIGN:
             return config.vault_dir()
@@ -1286,7 +1286,7 @@ class Engine:
     def start(self, source: dict) -> dict:
         """source: {"kind": "file", "name", "speed"} | {"kind": "session", "id", "speed"} (replay a
         saved session's audio) | {"kind": "mic", "device"} (validated by the server). A file
-        source may also carry "end" (seconds; bard-sim only, the API never passes it)."""
+        source may also carry "end" (seconds; troubadour-sim only, the API never passes it)."""
         self._require_models()
         kind = source["kind"]
         if kind in ("file", "session"):

@@ -5,8 +5,8 @@ from conftest import speak
 from fastapi.testclient import TestClient
 from test_engine import ALICE, BOB, named_voice, say
 
-from bard import config, server
-from bard.transcript import build, clock, filler_only, markdown, without_fillers
+from troubadour import config, server
+from troubadour.transcript import build, clock, filler_only, markdown, without_fillers
 
 
 def record_with(text: str, **message) -> dict:
@@ -32,7 +32,7 @@ def record_with(text: str, **message) -> dict:
 
 def test_markdown_header_and_line():
     md = markdown(record_with("You take 12 slashing damage"))
-    assert md.startswith("# Bard session · ")
+    assert md.startswith("# Troubadour session · ")
     assert "- Length: 1:02:05 · 1 lines\n" in md
     assert "Nora (GM), Priya as Pip" in md
     assert "**01:15 · Nora (GM):** You take 12 slashing damage" in md
@@ -92,8 +92,8 @@ def test_no_transcript_before_any_line(engine):
 
 
 def test_starting_a_new_session_saves_the_old_one_first(engine, monkeypatch):
-    monkeypatch.setattr("bard.engine.keep_awake", lambda: None)
-    monkeypatch.setattr("bard.engine.MicSource.start", lambda self, sink, on_end: None)
+    monkeypatch.setattr("troubadour.engine.keep_awake", lambda: None)
+    monkeypatch.setattr("troubadour.engine.MicSource.start", lambda self, sink, on_end: None)
     monkeypatch.setattr(engine, "_segment_loop", lambda sess: None)
     monkeypatch.setattr(engine, "_worker_loop", lambda sess: None)
     say(engine, ALICE, 2.0)
@@ -142,7 +142,7 @@ def test_current_transcript_download(api_engine, engine):
     r = api_engine.get("/api/transcript.md")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/markdown")
-    assert f'filename="bard-{engine.live.id}.md"' in r.headers["content-disposition"]
+    assert f'filename="troubadour-{engine.live.id}.md"' in r.headers["content-disposition"]
     assert "**00:00 · Alice:** I deal 12 slashing damage" in r.text
     assert api_engine.get("/api/transcript.json").json()["messages"][0]["speaker"] == "Alice"
     assert api_engine.get("/api/transcript.txt").status_code == 422

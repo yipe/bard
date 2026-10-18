@@ -1,7 +1,7 @@
 """Try the campaign-memory jobs with a real local model, into a scratch vault.
 
-    uv run spike/memory_trial.py writeup SESSION_ID --vault /tmp/bard-vault [--model M]
-    uv run spike/memory_trial.py import NOTES.md --vault /tmp/bard-vault [--model M]
+    uv run spike/memory_trial.py writeup SESSION_ID --vault /tmp/troubadour-vault [--model M]
+    uv run spike/memory_trial.py import NOTES.md --vault /tmp/troubadour-vault [--model M]
 
 Never touches data/campaign. Prints the job result and timing.
 """
@@ -15,10 +15,10 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND / "src"))
 
-from bard import config  # noqa: E402
-from bard.campaign import Vault  # noqa: E402
-from bard.engine import Bus, migrate_state, seated_players  # noqa: E402
-from bard.memory import Memory, MemoryLLM  # noqa: E402
+from troubadour import config  # noqa: E402
+from troubadour.campaign import Vault  # noqa: E402
+from troubadour.engine import Bus, migrate_state, seated_players  # noqa: E402
+from troubadour.memory import Memory, MemoryLLM  # noqa: E402
 
 
 def main() -> None:

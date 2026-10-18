@@ -8,8 +8,8 @@ from conftest import tone, write_wav
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from bard import config, server
-from bard.engine import MAIN_CAMPAIGN, Campaign
+from troubadour import config, server
+from troubadour.engine import MAIN_CAMPAIGN, Campaign
 
 LOCAL = "http://127.0.0.1:8765"
 HOST = {"host": "127.0.0.1:8765"}  # TestClient's WebSocket otherwise sends "testserver", which the host check refuses

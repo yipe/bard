@@ -29,14 +29,26 @@ const SPEEDS = [
 /** How often the idle Setup panel re-reads the inputs, so a mic plugged in or removed shows up. */
 export const SOURCES_POLL_MS = 2000
 /** The chosen mic outlives this panel: starting a session leaves Setup, and a reload starts it fresh. */
-export const MIC_KEY = "bard.mic"
+export const MIC_KEY = "troubadour.mic"
+/** The pre-rename key; read once and moved to MIC_KEY. */
+export const OLD_MIC_KEY = "bard.mic"
+
+function readSavedMic(): string | null {
+  const saved = localStorage.getItem(MIC_KEY)
+  if (saved !== null) return saved
+  const old = localStorage.getItem(OLD_MIC_KEY)
+  if (old === null) return null
+  localStorage.setItem(MIC_KEY, old)
+  localStorage.removeItem(OLD_MIC_KEY)
+  return old
+}
 
 export function StartPanel() {
   const sources = useStore((s) => s.sources)
   const status = useStore((s) => s.session?.status ?? "idle")
   const serverError = useStore((s) => s.session?.error ?? null)
   const [kind, setKind] = useState<"mic" | "file">("mic")
-  const [mic, setMicState] = useState<string | null>(() => localStorage.getItem(MIC_KEY))
+  const [mic, setMicState] = useState<string | null>(readSavedMic)
   const setMic = (name: string | null) => {
     setMicState(name)
     if (name) localStorage.setItem(MIC_KEY, name)
@@ -120,7 +132,7 @@ export function StartPanel() {
     <Card>
       <CardHeader>
         <CardTitle>Start session</CardTitle>
-        <CardDescription>Pick what Bard listens to. Voices can be named during play.</CardDescription>
+        <CardDescription>Pick what Troubadour listens to. Voices can be named during play.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
@@ -251,8 +263,8 @@ export function StartPanel() {
                 : "Hey, something in this mic's checklist is red"}
             </DialogTitle>
             <DialogDescription>
-              {warning?.mic} may not hear the whole table well. Bard will still work, but quieter or far-away
-              players get fewer words and more wrong names.
+              {warning?.mic} may not hear the whole table well. Troubadour will still work, but quieter or
+              far-away players get fewer words and more wrong names.
             </DialogDescription>
           </DialogHeader>
           <ul aria-label="Red checks" className="space-y-1.5">

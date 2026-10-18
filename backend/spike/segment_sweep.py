@@ -1,4 +1,4 @@
-"""Tune utterance cutting (bard.segment) on real audio.
+"""Tune utterance cutting (troubadour.segment) on real audio.
 
     uv run spike/segment_sweep.py vad      [--data DIR]                 # speaker purity, every grid point
     uv run spike/segment_sweep.py whisper  CONFIG... [--data DIR]       # + word errors, chosen points
@@ -9,7 +9,7 @@ setting then replays them through the shipped Segmenter, so a grid point costs s
 vad: on the benchmark clips (samples/eval, AMI + Critical Role, with true speaker turns):
   lines, median length, share cut at max_s, purity (speech time of a line's main speaker),
   mixed (lines where a second speaker talks ≥ 1 s), and recall (true speech inside a line).
-whisper: each line transcribed like the live path (turbo, bard.asr.build_prompt: the table's
+whisper: each line transcribed like the live path (turbo, troubadour.asr.build_prompt: the table's
   names + the last 2 lines) with word times. gold = the adjudicated lines of a real session (asr_compare/asr_score), scored on the
   words whose middle falls inside each gold line's span, so any cutting can be scored;
   cr = word errors of whole Critical Role clips against their captions.
@@ -35,8 +35,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from asr_score import NAMES, normalize, wer  # noqa: E402
 
-from bard import asr  # noqa: E402
-from bard.segment import SegmentConfig, Segmenter  # noqa: E402
+from troubadour import asr  # noqa: E402
+from troubadour.segment import SegmentConfig, Segmenter  # noqa: E402
 
 SR, FRAME = 16000, 512
 TURBO = "mlx-community/whisper-large-v3-turbo"
@@ -56,7 +56,7 @@ def audio_and_probs(path: Path, cache: Path) -> tuple[np.ndarray, np.ndarray]:
     import torch
     from silero_vad import load_silero_vad
 
-    from bard.audio import load_audio
+    from troubadour.audio import load_audio
 
     audio = load_audio(path)
     audio = audio[: len(audio) // FRAME * FRAME]
@@ -126,7 +126,7 @@ def sweep_vad(args) -> None:
 
 
 class Whisper:
-    """The live transcription call (bard.asr) with word times, cached by clip + prompt."""
+    """The live transcription call (troubadour.asr) with word times, cached by clip + prompt."""
 
     def __init__(self, cache: Path):
         self.path = cache / "whisper.json"
@@ -169,7 +169,7 @@ class Whisper:
 
 def transcribe(whisper: Whisper, tag: str, audio, spans, names: list[str], wanted=None) -> list[tuple[float, float, str]]:
     """(start, end, word) in session time; like the live path, each line's prompt holds the names
-    and the last two lines (bard.asr.build_prompt). wanted(i): only those lines (and the two before each, for the prompt)."""
+    and the last two lines (troubadour.asr.build_prompt). wanted(i): only those lines (and the two before each, for the prompt)."""
     keep = (
         set(range(len(spans)))
         if wanted is None

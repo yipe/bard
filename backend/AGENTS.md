@@ -1,9 +1,9 @@
 # Backend agent guide (Python 3, uv, FastAPI)
 
-Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff check src tests spike`,
+Run from `backend/`: `uv run troubadour` (server), `uv run pytest -q`, `uv run ruff check src tests spike`,
 `uv run ruff format src tests spike`. Research scripts: `uv run --group spike spike/<script>.py`.
 
-## Modules (`src/bard/`)
+## Modules (`src/troubadour/`)
 
 | Module | Role |
 |---|---|
@@ -20,9 +20,9 @@ Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff ch
 | `cleanup.py` | Spelling cleanup: `Speller.find` (code), `ask` (constrained LLM), `apply` (edits + offsets), `clean_record`. |
 | `improve.py` | Post-session jobs: re-transcribe (`run`), `fix_spellings`, restore. |
 | `dnd_terms.py` | D&D vocabulary: committed SRD list + an optional local list in `data/dnd_terms.json`. |
-| `cloud.py` | Opt-in Bard Cloud backup: OAuth PKCE sign-in, vault scan, plan → signed uploads → commit. Only network code besides the local LLM. |
-| `sim.py` | `bard-sim`: headless re-run of a saved session in a throwaway data dir, with a comparison. |
-| `config.py` | Env-driven settings (`BARD_*`). Paths like `vault_dir()` resolve per call so tests can redirect them. |
+| `cloud.py` | Opt-in Troubadour Cloud backup: OAuth PKCE sign-in, vault scan, plan → signed uploads → commit. Only network code besides the local LLM. |
+| `sim.py` | `troubadour-sim`: headless re-run of a saved session in a throwaway data dir, with a comparison. |
+| `config.py` | Env-driven settings (`TROUBADOUR_*`). Paths like `vault_dir()` resolve per call so tests can redirect them. |
 
 ## Invariants (break these and something subtle breaks)
 
@@ -35,7 +35,7 @@ Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff ch
 - **Never lose words:** improve keeps a line's old text if Whisper now hears nothing; every spelling
   fix records what was heard (`fixes`); the first rewrite of a saved transcript backs up
   `transcript.orig.json`.
-- **Vault notes are the user's:** Bard owns only the documented frontmatter keys, the description,
+- **Vault notes are the user's:** Troubadour owns only the documented frontmatter keys, the description,
   `## Facts` and `## Suggested facts`. Keep other keys/tags/sections verbatim; never rewrite a note
   whose frontmatter doesn't parse (`read_only`); deletes go to `.trash/`.
 - **Spelling cleanup must not touch everyday speech:** dictionary words and their forms, case-only
@@ -43,7 +43,7 @@ Run from `backend/`: `uv run bard` (server), `uv run pytest -q`, `uv run ruff ch
 
 ## Testing
 
-- No models, no network: Whisper is stubbed (`bard.asr.transcribe`), the embedder is a fake,
+- No models, no network: Whisper is stubbed (`troubadour.asr.transcribe`), the embedder is a fake,
   `engine.cleanup_llm.json` raises unless a test patches it, and the generated D&D list is hidden
   (`hermetic_dnd_terms`). Keep it that way.
 - Use the fixtures in `tests/conftest.py` (`dirs`, `engine`, `tone`, `speak`, `write_wav`).

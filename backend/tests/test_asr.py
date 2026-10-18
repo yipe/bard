@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from bard import asr
+from troubadour import asr
 
 PROMPT = "A D&D session. Elara, Auggie, Kessia, Magenta. Initiative, perception check, saving throw."
 

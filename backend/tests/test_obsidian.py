@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from bard.obsidian import vault_for
+from troubadour.obsidian import vault_for
 
 
 @pytest.fixture

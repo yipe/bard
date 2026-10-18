@@ -14,7 +14,7 @@ SRD_PATH = Path(__file__).with_name("srd_terms.json")
 
 
 def builtin() -> list[tuple[str, str]]:
-    """The SRD's names (CC-BY-4.0, shipped with Bard; see srd_terms.json for attribution)."""
+    """The SRD's names (CC-BY-4.0, shipped with Troubadour; see srd_terms.json for attribution)."""
     try:
         return [(n, k) for n, k in json.loads(SRD_PATH.read_text())["terms"]]
     except (OSError, ValueError, KeyError):

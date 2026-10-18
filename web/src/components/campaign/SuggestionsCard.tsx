@@ -171,7 +171,7 @@ export function SuggestionsCard() {
   )
 }
 
-/** Words the user told Bard to stop suggesting (kept in the vault note "Ignored words.md"). */
+/** Words the user told Troubadour to stop suggesting (kept in the vault note "Ignored words.md"). */
 function IgnoredWords({ words }: { words: string[] }) {
   const [open, setOpen] = useState(false)
   const sorted = [...words].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))

@@ -51,7 +51,7 @@ describe("glossary helpers", () => {
     expect(obsidianUrl({ id: "v1", folder: "" }, "People/Elara.md")).toBe(
       "obsidian://open?vault=v1&file=People%2FElara.md",
     )
-    // BARD_VAULT can be a folder inside a bigger vault: notes are relative to that vault's root.
+    // TROUBADOUR_VAULT can be a folder inside a bigger vault: notes are relative to that vault's root.
     expect(obsidianUrl({ id: "v1", folder: "Campaigns/Morvath" }, "Sessions/A B.md")).toBe(
       "obsidian://open?vault=v1&file=Campaigns%2FMorvath%2FSessions%2FA%20B.md",
     )

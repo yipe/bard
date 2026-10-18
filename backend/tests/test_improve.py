@@ -8,9 +8,9 @@ import pytest
 from conftest import tone, write_wav
 from fastapi.testclient import TestClient
 
-from bard import config, improve, server
-from bard.campaign import Corrector, Entity
-from bard.transcript import build
+from troubadour import config, improve, server
+from troubadour.campaign import Corrector, Entity
+from troubadour.transcript import build
 
 SID = "2026-10-08_193401-eebf"
 
@@ -69,7 +69,7 @@ def api(engine, dirs, monkeypatch):
     folder.mkdir(parents=True)
     (folder / "transcript.json").write_text(json.dumps(record(["Dallara, three.", "Hello."])))
     write_wav(folder / "audio.wav", tone(220, 6.0))
-    monkeypatch.setattr("bard.asr.transcribe", lambda clip, prompt=None, model=None: "Elara, three!")
+    monkeypatch.setattr("troubadour.asr.transcribe", lambda clip, prompt=None, model=None: "Elara, three!")
     return TestClient(server.app, base_url="http://127.0.0.1:8765"), folder
 
 

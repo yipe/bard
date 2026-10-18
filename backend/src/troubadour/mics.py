@@ -1,4 +1,4 @@
-"""What Bard knows about each microphone, and whether it suits the middle of a table.
+"""What Troubadour knows about each microphone, and whether it suits the middle of a table.
 
 Three sources, because no API reports a mic's pickup pattern or capsule type:
 1. macOS (system_profiler): name, maker, connection (built-in, USB, Bluetooth…), sample rate.

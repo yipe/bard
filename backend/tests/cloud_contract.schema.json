@@ -61,14 +61,14 @@
           "minLength": 1,
           "maxLength": 100
         },
-        "bard_campaign_id": {
+        "campaign_id": {
           "type": "string",
           "pattern": "^[A-Za-z0-9_-]{1,64}$"
         }
       },
       "required": [
         "name",
-        "bard_campaign_id"
+        "campaign_id"
       ],
       "additionalProperties": false
     },
@@ -84,7 +84,7 @@
         "name": {
           "type": "string"
         },
-        "bard_campaign_id": {
+        "campaign_id": {
           "type": "string"
         },
         "head_snapshot": {
@@ -108,7 +108,7 @@
       "required": [
         "id",
         "name",
-        "bard_campaign_id",
+        "campaign_id",
         "head_snapshot",
         "created_at"
       ],
@@ -502,6 +502,27 @@
         "file_count",
         "total_bytes",
         "message"
+      ],
+      "additionalProperties": false
+    },
+    "Share": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "url"
       ],
       "additionalProperties": false
     },

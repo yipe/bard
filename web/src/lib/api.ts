@@ -177,14 +177,14 @@ export const api = {
     req<CampaignJob>("POST", `/api/campaign/writeup/${encodeURIComponent(sessionId)}`),
 
   cloud: () => req<CloudStatus>("GET", "/api/cloud"),
-  /** Start signing in to Bard Cloud: the first call that reaches the service. Open the returned page. */
+  /** Start signing in to Troubadour Cloud: the first call that reaches the service. Open the returned page. */
   cloudConnect: () => req<{ authorize_url: string }>("POST", "/api/cloud/connect"),
   cloudDisconnect: () => req<CloudStatus>("POST", "/api/cloud/disconnect"),
   cloudOptions: (options: { include_transcripts?: boolean; auto_backup?: boolean }) =>
     req<CloudStatus>("PUT", "/api/cloud/options", options),
   /** Back up the open campaign's notes (background job, kind "backup"). */
   cloudBackup: () => req<CampaignJob>("POST", "/api/cloud/backup"),
-  /** This account's campaigns in Bard Cloud, from any Mac. */
+  /** This account's campaigns in Troubadour Cloud, from any Mac. */
   cloudVaults: () => req<CloudVault[]>("GET", "/api/cloud/vaults"),
   /** Bring a backed-up campaign's newest notes into the open campaign (background job, kind "restore"). */
   cloudRestore: (vault_id: string) => req<CampaignJob>("POST", "/api/cloud/restore", { vault_id }),

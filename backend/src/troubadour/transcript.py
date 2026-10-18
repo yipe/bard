@@ -129,7 +129,7 @@ def markdown(record: dict) -> str:
         for p in record["players"]
     )
     lines = [
-        f"# Bard session · {started}",
+        f"# Troubadour session · {started}",
         "",
         f"- Source: {_source(s.get('source'))}",
         f"- Length: {clock(s.get('duration_s', 0))} · {s['lines']} lines",

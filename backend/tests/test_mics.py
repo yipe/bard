@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from bard import config, mics, server
+from troubadour import config, mics, server
 
 
 def by_id(checks):

@@ -45,7 +45,7 @@ function summary(
 }
 
 /**
- * Campaign header: back up the open campaign's notes to Bard Cloud (opt-in), automatically or now, and
+ * Campaign header: back up the open campaign's notes to Troubadour Cloud (opt-in), automatically or now, and
  * restore them. Nothing reaches the service until Connect; the status shown here comes from this Mac.
  */
 export function CloudBackupButton() {
@@ -79,7 +79,7 @@ export function CloudBackupButton() {
         {label.failed ? <AlertCircle /> : status?.connected === false ? <CloudOff /> : <Cloud />} {label.text}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3 p-3 text-sm">
-        <PopoverTitle className="font-medium">Bard Cloud backup</PopoverTitle>
+        <PopoverTitle className="font-medium">Troubadour Cloud backup</PopoverTitle>
         {!status ? (
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
         ) : !status.connected ? (
@@ -152,7 +152,7 @@ function Connected({ status }: { status: CloudStatus }) {
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
-          <ExternalLink className="size-3" /> Open Bard Cloud
+          <ExternalLink className="size-3" /> Open Troubadour Cloud
         </a>
       </div>
       <Restore campaign={status.campaign} />
@@ -199,7 +199,7 @@ function Restore({ campaign }: { campaign: string }) {
     if (!found) return
     const backedUp = found.filter((v) => v.head_snapshot)
     setVaults(backedUp)
-    setChosen((backedUp.find((v) => v.bard_campaign_id === campaign) ?? backedUp[0])?.id ?? "")
+    setChosen((backedUp.find((v) => v.campaign_id === campaign) ?? backedUp[0])?.id ?? "")
   }
 
   if (vaults === null)
@@ -219,7 +219,7 @@ function Restore({ campaign }: { campaign: string }) {
         {vaults.map((v) => (
           <option key={v.id} value={v.id}>
             {v.name}
-            {v.bard_campaign_id === campaign ? " (this campaign)" : ""}
+            {v.campaign_id === campaign ? " (this campaign)" : ""}
           </option>
         ))}
       </NativeSelect>

@@ -4,7 +4,7 @@ import { api } from "./api"
 import { campaignActions } from "./campaignStore"
 import type { CloudStatus } from "./types"
 
-/** Bard Cloud backup status for the open campaign; from GET /api/cloud and `cloud.updated` events. */
+/** Troubadour Cloud backup status for the open campaign; from GET /api/cloud and `cloud.updated` events. */
 export const useCloud = create<{ status: CloudStatus | null }>(() => ({ status: null }))
 
 const set = useCloud.setState
@@ -24,9 +24,9 @@ export const cloudActions = {
     const load = async () => set({ status: await api.cloud() })
     return quiet ? load().catch(() => undefined) : run(load)
   },
-  /** Opens the service's sign-in page in a new tab; it comes back to Bard, which sends `cloud.updated`.
+  /** Opens the service's sign-in page in a new tab; it comes back to Troubadour, which sends `cloud.updated`.
    * The tab opens during the click (after an await, browsers block pop-ups) and loses its opener, so
-   * the sign-in page can't reach back into Bard's tab. */
+   * the sign-in page can't reach back into Troubadour's tab. */
   connect: () => {
     const tab = window.open("about:blank", "_blank")
     if (tab) tab.opener = null
@@ -45,7 +45,7 @@ export const cloudActions = {
   setOptions: (options: { include_transcripts?: boolean; auto_backup?: boolean }) =>
     run(async () => set({ status: await api.cloudOptions(options) })),
   backup: () => run(async () => campaignActions.putJob(await api.cloudBackup())),
-  /** Campaigns in Bard Cloud to restore from; undefined if the service couldn't be reached (toasted). */
+  /** Campaigns in Troubadour Cloud to restore from; undefined if the service couldn't be reached (toasted). */
   vaults: () => run(() => api.cloudVaults()),
   restore: (vaultId: string) => run(async () => campaignActions.putJob(await api.cloudRestore(vaultId))),
 }

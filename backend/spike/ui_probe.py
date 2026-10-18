@@ -1,4 +1,4 @@
-"""UI stress probe: a muted headless Chrome watching the Bard UI over the DevTools protocol.
+"""UI stress probe: a muted headless Chrome watching the Troubadour UI over the DevTools protocol.
 
 Usage: uv run spike/ui_probe.py --server http://127.0.0.1:8766 --minutes 140
 
@@ -108,7 +108,7 @@ async def main(args) -> None:
     while api.get("/api/state").json()["session"]["status"] != "running":
         await asyncio.sleep(2)
 
-    profile = tempfile.mkdtemp(prefix="bard-ui-probe-")
+    profile = tempfile.mkdtemp(prefix="troubadour-ui-probe-")
     chrome = subprocess.Popen(
         [CHROME, "--headless=new", "--mute-audio", f"--remote-debugging-port={args.cdp_port}", f"--user-data-dir={profile}",
          "--no-first-run", "--no-default-browser-check", "--enable-precise-memory-info", "--window-size=1440,1000", "about:blank"],

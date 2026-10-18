@@ -6,17 +6,18 @@ registered vault (backend/). Links name the vault by its registry id instead, wh
 """
 
 import json
-import os
 import re
 from pathlib import Path
+
+from .config import env
 
 REGISTRY = Path.home() / "Library" / "Application Support" / "obsidian" / "obsidian.json"
 VAULT_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 
 def registry() -> Path:
-    """BARD_OBSIDIAN_REGISTRY overrides it (tests)."""
-    return Path(os.environ.get("BARD_OBSIDIAN_REGISTRY", REGISTRY))
+    """TROUBADOUR_OBSIDIAN_REGISTRY overrides it (tests)."""
+    return Path(env("OBSIDIAN_REGISTRY", str(REGISTRY)))
 
 
 def vault_for(folder: Path, path: Path | None = None) -> dict | None:

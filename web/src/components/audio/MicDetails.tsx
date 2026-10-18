@@ -37,7 +37,7 @@ const ADVICE: Record<MicCheck["id"], string> = {
 }
 const ADVICE_ORDER: MicCheck["id"][] = ["around", "distance", "wired", "rate", "measured"]
 
-/** Setup: what Bard knows about the selected mic and whether it suits a table. */
+/** Setup: what Troubadour knows about the selected mic and whether it suits a table. */
 export function MicDetails({ device }: { device: string | null }) {
   const [mics, setMics] = useState<MicInfo[] | null>(null)
   const [editing, setEditing] = useState(false)
@@ -106,7 +106,7 @@ export function MicDetails({ device }: { device: string | null }) {
       {(unknown || editing) && (
         <SpecsForm
           mic={mic}
-          title={unknown ? "Tell Bard about this mic" : "Correct this mic's details"}
+          title={unknown ? "Tell Troubadour about this mic" : "Correct this mic's details"}
           onCancel={unknown ? undefined : () => setEditing(false)}
           onSaved={async () => {
             await load()

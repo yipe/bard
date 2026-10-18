@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import eval as ev  # noqa: E402
 import run  # noqa: E402
 
-from bard import voices  # noqa: E402
+from troubadour import voices  # noqa: E402
 
 MIN_S = 1.5
 

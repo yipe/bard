@@ -1,4 +1,4 @@
-"""Watch a bard server's memory by macOS footprint category during a soak test.
+"""Watch a troubadour server's memory by macOS footprint category during a soak test.
 
 Usage: uv run spike/memwatch.py --port 8766 [--every 60]
 

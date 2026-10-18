@@ -1,4 +1,4 @@
-"""`bard-sim SESSION_ID`: re-run a saved session through the current pipeline, headless.
+"""`troubadour-sim SESSION_ID`: re-run a saved session through the current pipeline, headless.
 
 The session's audio (its recording, or the sample it replayed) plays through the same engine as
 the server, against the setup the session had (players, voiceprints, training clips), in a
@@ -102,7 +102,7 @@ def _seed(work: Path, setup: str, session_dir: Path, data_dir: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    p = argparse.ArgumentParser(prog="bard-sim", description=__doc__.split("\n\n")[0])
+    p = argparse.ArgumentParser(prog="troubadour-sim", description=__doc__.split("\n\n")[0])
     p.add_argument("session", help="session id (see GET /api/sessions or data/sessions/)")
     p.add_argument(
         "--setup",
@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> None:
     original_path = session_dir / "transcript.json"
     original = json.loads(original_path.read_text()) if original_path.is_file() else None
 
-    work = Path(tempfile.mkdtemp(prefix="bard-sim-"))
+    work = Path(tempfile.mkdtemp(prefix="troubadour-sim-"))
     _seed(work, args.setup, session_dir, data_dir)
     config.DATA_DIR, config.SAMPLES_DIR = work, wav.parent.resolve()  # the engine reads these at call time
     audio.FileSource.MAX_SPEED = max(audio.FileSource.MAX_SPEED, args.speed)
