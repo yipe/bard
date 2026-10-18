@@ -342,6 +342,11 @@ class Cloud:
         r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {token}"})
         if r.status_code == 401:  # the access token may have just expired or been revoked: refresh once
             r = self._request(method, url, json=body, headers={"Authorization": f"Bearer {self._token(rejected=token)}"})
+            if r.status_code == 401:
+                # Even a fresh token is refused: this sign-in is no good here any more (say, the service moved
+                # to another sign-in provider). Offer Connect again instead of failing every backup.
+                self.logout()
+                raise NotConnected()
         try:
             payload = r.json()
         except ValueError:

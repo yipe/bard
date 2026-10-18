@@ -41,6 +41,7 @@ class FakeService:
         self.fail_next_commit: str | None = None  # an error code to answer the next commit with
         self.tampered: dict[str, bytes] = {}  # sha256 -> bytes served instead of the real ones
         self.rejecting: threading.Barrier | None = None
+        self.foreign_sign_in = False  # tokens still refresh, but the API accepts none (another sign-in provider)
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self.handle)
@@ -97,7 +98,7 @@ class FakeService:
             return httpx.Response(200)
         if url.startswith(f"{SERVICE}/api/v1/"):
             user = self.tokens.get(request.headers.get("authorization", "").removeprefix("Bearer "))
-            if not user:
+            if not user or self.foreign_sign_in:
                 if self.rejecting is not None:
                     self.rejecting.wait(timeout=5)  # line rejected callers up, so their refreshes race
                 return self.error(401, "unauthorized")
@@ -350,6 +351,16 @@ def test_a_revoked_sign_in_disconnects(client, service):
     service.refresh.clear()
     with pytest.raises(NotConnected):
         client.backup("main", "My campaign", Path("/nowhere"), noop)
+    assert client.status("main")["connected"] is False
+
+
+def test_a_sign_in_the_service_no_longer_accepts_disconnects(client, service):
+    """The service moved to another sign-in provider: the old tokens still refresh, but every one is refused.
+    Bard must offer Connect again rather than fail every backup."""
+    connect(client, service)
+    service.foreign_sign_in = True
+    with pytest.raises(NotConnected):
+        client.vaults()
     assert client.status("main")["connected"] is False
 
 
