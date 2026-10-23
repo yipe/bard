@@ -25,7 +25,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from . import config, improve, mics, obsidian, transcript
 from .ask import Asker
 from .audio import list_mics
-from .campaign import TYPES, Vault
+from .campaign import TYPES, Vault, mention_counts
 from .cloud import AutoBackup, Cloud, CloudError
 from .engine import OVERFLOW, SESSION_ID, Bus, Engine, sample_path, session_audio
 from .memory import Memory, spelling_suggestions
@@ -289,7 +289,7 @@ def current_transcript(fmt: Literal["md", "json"]):
     return _download(body, record["session"]["id"], fmt)
 
 
-class MergeIn(BaseModel):
+class SessionMergeIn(BaseModel):
     ids: list[str] = Field(min_length=2, max_length=2)
 
 
@@ -300,7 +300,7 @@ def sessions():
 
 
 @app.post("/api/sessions/merge")
-def merge_sessions(body: MergeIn):
+def merge_sessions(body: SessionMergeIn):
     """Append the later of two saved sessions onto the earlier one. The later folder is removed."""
     return _call(engine.merge_sessions, body.ids)
 
@@ -418,18 +418,28 @@ def saved_audio(sid: str):
 # ------------------------------------------------------------------ campaign memory
 
 
-def _entity(e) -> dict:
-    return e.to_json(vault.root)
+def _entity(e, counts: dict[str, int] | None = None) -> dict:
+    data = e.to_json(vault.root)
+    data["sessions"] = (counts if counts is not None else _mention_counts()).get(e.name, 0)
+    return data
+
+
+def _mention_counts() -> dict[str, int]:
+    try:
+        return mention_counts(vault, engine.sessions_dir())
+    except OSError:
+        return {}
 
 
 @app.get("/api/campaign")
 def campaign():
     """The whole glossary (a few hundred notes at most), campaign facts, jobs and write-ups."""
+    counts = _mention_counts()
     return {
         "vault": str(vault.root),
         "obsidian": obsidian.vault_for(vault.root),  # None: Obsidian doesn't know this folder yet
         "types": list(TYPES),
-        "entities": [_entity(e) for e in vault.entities()],
+        "entities": [_entity(e, counts) for e in vault.entities()],
         "facts": vault.campaign_facts(),
         "jobs": memory.list_jobs(),
         "answers": asker.list(),
@@ -476,6 +486,13 @@ def merge_entity(name: str, body: MergeIn):
     e = _call(vault.merge, name, body.into)
     memory.changed()
     return _entity(e)
+
+
+@app.post("/api/campaign/entities/{name}/facts/search")
+def seek_facts(name: str):
+    """Scrub transcripts and imported notes for lasting facts about this entry."""
+    with campaign_gate:
+        return _call(memory.seek_facts, name).to_json()
 
 
 @app.post("/api/campaign/entities/{name}/facts")

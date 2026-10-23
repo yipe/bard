@@ -201,6 +201,7 @@ export interface Entity {
   suggested_facts: string[]
   path: string | null /* vault-relative, e.g. "People/Elara.md" */
   read_only: boolean
+  sessions?: number /* how many played sessions mention this name; missing on older payloads */
 }
 /** A source an answer cites: a transcript excerpt, a glossary entry or another vault note. */
 export interface AnswerSource {
@@ -226,7 +227,7 @@ export interface CampaignAnswer {
 }
 export interface CampaignJob {
   id: string
-  kind: "import" | "writeup" | "improve" | "spelling" | "retranscribe" | "backup" | "restore"
+  kind: "import" | "writeup" | "facts" | "improve" | "spelling" | "retranscribe" | "backup" | "restore"
   title: string /* notes title, or the session id for a write-up / improve */
   state: "queued" | "running" | "done" | "error"
   done: number

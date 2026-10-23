@@ -182,6 +182,8 @@ export const api = {
     req<CampaignJob>("POST", "/api/campaign/import", { title, text }),
   /** A question → answered in the background; progress and the answer arrive as `campaign.answer`. */
   ask: (question: string) => req<CampaignAnswer>("POST", "/api/campaign/ask", { question }),
+  seekFacts: (name: string) =>
+    req<CampaignJob>("POST", `/api/campaign/entities/${encodeURIComponent(name)}/facts/search`),
   writeUp: (sessionId: string) =>
     req<CampaignJob>("POST", `/api/campaign/writeup/${encodeURIComponent(sessionId)}`),
 

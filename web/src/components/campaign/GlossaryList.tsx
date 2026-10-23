@@ -31,7 +31,10 @@ export function GlossaryList({ entities, types }: { entities: Entity[]; types: E
       entities
         .filter((e) => (filter === "all" ? true : filter === "review" ? needsReview(e) : e.type === filter))
         .filter((e) => matchesSearch(e, query))
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+        .sort(
+          (a, b) =>
+            (b.sessions ?? 0) - (a.sessions ?? 0) || a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        ),
     [entities, filter, query],
   )
 

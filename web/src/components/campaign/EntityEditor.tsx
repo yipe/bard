@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Check, GitMerge, Lock, Sparkles, Trash2, X } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Check, GitMerge, Loader2, Lock, Search, Sparkles, Trash2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
 import { api, type EntityPatch, type EntityReview } from "@/lib/api"
-import { ENTITY_TYPES, TYPE_LABEL } from "@/lib/campaign"
-import { deleteEntity, mergeEntity, mutateEntity, useCampaign } from "@/lib/campaignStore"
+import { ENTITY_TYPES, TYPE_LABEL, jobActive, jobCount } from "@/lib/campaign"
+import { attempt, campaignActions, deleteEntity, mergeEntity, mutateEntity, useCampaign } from "@/lib/campaignStore"
 import type { Entity, EntityType } from "@/lib/types"
 import { ObsidianLink } from "./ObsidianLink"
 import { ChipEditor } from "./ChipEditor"
@@ -205,7 +205,8 @@ export function EntityEditor({ entity }: { entity: Entity }) {
           </Section>
         )}
 
-        <Section title="Facts">
+        <Section title="Facts" hint="Things still true next session, not a spell slot or a hit-point total.">
+          {!e.read_only && <LookForFacts name={e.name} />}
           <FactList
             facts={e.facts}
             empty="No facts yet."
@@ -251,6 +252,37 @@ function Section({
       {hint && <p className="text-xs text-muted-foreground/80">{hint}</p>}
       {children}
     </section>
+  )
+}
+
+function LookForFacts({ name }: { name: string }) {
+  const jobs = useCampaign((s) => s.jobs)
+  const job = useMemo(
+    () =>
+      Object.values(jobs)
+        .filter((j) => j.kind === "facts" && j.title === name)
+        .at(-1),
+    [jobs, name],
+  )
+  const running = !!job && jobActive(job)
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={running}
+        onClick={async () => {
+          const j = await attempt(() => api.seekFacts(name))
+          if (j) campaignActions.putJob(j)
+        }}
+      >
+        {running ? <Loader2 className="animate-spin" /> : <Search />}
+        Look for facts
+        {running && <span className="text-muted-foreground tabular-nums">{jobCount(job)}</span>}
+      </Button>
+      {job?.state === "error" && <span className="text-xs text-destructive">{job.message || "Fact search failed"}</span>}
+      {job?.state === "done" && <span className="text-xs text-muted-foreground">{job.message}</span>}
+    </div>
   )
 }
 

@@ -41,9 +41,16 @@ CHUNK_CHARS = 6000  # notes per extraction call; small enough for a fast, carefu
 PART_FACTS, PART_NAMES, PART_CLAIMS, FINAL_PART_CLAIMS = 5, 8, 12, 20
 NOTE_MAX = 12  # scenes on the session page; the claim list is notes for that pass, not the page
 MAX_SUGGESTED_FACTS = 30  # per write-up: more than anyone will review
-# Facts about a passing state, not a lasting truth ("Magenta has one hit point").
+# A passing state, not a fact ("Elara has one third-level spell slot remaining").
 FLEETING = re.compile(
-    r"\b(hit points?|hp|currently|right now|at the moment|is (standing|sitting|walking|holding|filling)|this turn)\b", re.I
+    r"\b("
+    r"hit points?|\bhp\b|spell slots?|currently|right now|at the moment|for now|this turn|"
+    r"concentration|temporary hit|"
+    r"is (standing|sitting|walking|holding|filling|unconscious|prone|stunned|paralyzed|concentrating)|"
+    r"until (the )?(next )?(rest|dawn|morning|tomorrow)|"
+    r"(has|have|had) (only |just )?(one|two|three|four|five|\d+|no|a) (\w+ ){0,4}(spell slot|hit point)"
+    r")\b",
+    re.I,
 )
 TRANSCRIPT_CHUNK_CHARS = 12000  # ~15 min of table talk per write-up call
 MAX_ITEMS = 40
@@ -179,6 +186,20 @@ Players joke, plan, speculate and talk about real life; only what actually happe
 usually what the GM narrates or confirms ("They assassinate her." as a joke is not an event).
 Never invent anything that isn't in the transcript. Answer with JSON only."""
 
+FACT_SCHEMA = _obj({"facts": STRS})
+
+FACT_SYSTEM = """You extract lasting facts about one named thing in a Dungeons & Dragons campaign.
+You get its name, the facts already known, and a passage from a transcript or from imported notes.
+facts: sentences that will still be true next session. Who they are, what they can do, what they own
+that they will still own, who they owe, what they want, where they are from, what happened to them
+that changed them. Each sentence names them.
+Not a fact: hit points, spell slots remaining, conditions, concentration, where they are standing,
+what they are doing in this scene, a roll, a joke, or a plan they have not carried out.
+"Elara has one third-level spell slot remaining" is not a fact. "Elara is a cleric" is.
+Skip anything already in the known facts. Never invent. If the passage says nothing lasting, return
+no facts. Answer with JSON only."""
+
+
 SESSION_END = (
     "This part is the end of the session. The last did lines should say where they stopped and what they "
     "came away with. Anything still unresolved is open, not a plan."
@@ -210,6 +231,51 @@ Answer with JSON only."""
 
 
 # ------------------------------------------------------------------ validation
+
+
+def fleeting(text: str) -> bool:
+    """True when a sentence is a moment in the session, not something still true next time."""
+    return bool(FLEETING.search(text))
+
+
+def passages_about(vault: Vault, sessions_dir: Path, names: list[str]) -> list[tuple[str, str]]:
+    """(label, text) for each transcript and imported note that mentions one of these names.
+
+    A long transcript contributes only the lines that say the name, not the whole sitting.
+    """
+    needles = [n.casefold() for n in names if len(n) >= 2 and not (n.casefold() != names[0].casefold() and everyday(n))]
+    if not needles:
+        return []
+    rx = re.compile(r"(?<![a-z0-9])(?:" + "|".join(re.escape(n) for n in sorted(set(needles), key=len, reverse=True)) + r")(?![a-z0-9])")
+    out: list[tuple[str, str]] = []
+
+    def keep(label: str, lines: list[str]) -> None:
+        hit = [line for line in lines if rx.search(line.casefold())]
+        if not hit:
+            return
+        text = "\n".join(hit)
+        # One call per source, split only when the mentions themselves are long.
+        while text:
+            out.append((label, text[:8000]))
+            text = text[8000:]
+
+    if sessions_dir.is_dir():
+        for path in sorted(sessions_dir.glob("*/transcript.json")):
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            lines = [m.get("text", "") for m in record.get("messages") or [] if isinstance(m, dict)]
+            keep(path.parent.name, [ln for ln in lines if isinstance(ln, str)])
+    notes = vault.root / "Notes"
+    if notes.is_dir():
+        for path in sorted(notes.glob("*.md")):
+            try:
+                body = path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            keep(path.stem, body.splitlines())
+    return out
 
 
 def _text(value, limit: int = TEXT_MAX) -> str:
@@ -387,7 +453,7 @@ def glossary_brief(vault: Vault, limit: int = 300) -> str:
 @dataclass
 class Job:
     id: str
-    kind: str  # "import" | "writeup" | "improve" | "spelling" | "retranscribe" | "backup" | "restore"
+    kind: str  # "import" | "writeup" | "facts" | "improve" | "spelling" | "retranscribe" | "backup" | "restore"
     title: str
     state: str = "queued"  # queued | running | done | error
     done: int = 0
@@ -550,6 +616,53 @@ class Memory:
 
     # ---------------------------------------------------------------- session write-up
 
+    def seek_facts(self, name: str) -> Job:
+        """Read every transcript and imported note that mentions this entry, and suggest lasting facts."""
+        if self.vault.find(name) is None:
+            raise KeyError(name)
+        return self.submit("facts", name, lambda job: self._seek_facts(job, name))
+
+    def _seek_facts(self, job: Job, name: str) -> None:
+        entity = self.vault.find(name)
+        if entity is None:
+            raise KeyError(name)
+        passages = passages_about(self.vault, self.sessions_dir(), entity.names())
+        if not passages:
+            job.message = f"Nothing mentions {entity.name}"
+            return
+        known = "\n".join(f"- {f}" for f in [*entity.facts, *entity.suggested_facts]) or "- (none)"
+        job.total = len(passages)
+        self.emit(job)
+        added = 0
+        for label, text in passages:
+            if added >= MAX_SUGGESTED_FACTS:
+                break
+            out = self.llm.json(
+                FACT_SYSTEM,
+                f"Name: {entity.name}\n\nKnown facts:\n{known}\n\nPassage ({label}):\n{text}",
+                FACT_SCHEMA,
+            )
+            for raw in out.get("facts") or []:
+                fact = _text(raw)
+                if not fact or fleeting(fact):
+                    continue
+                before = self.vault.find(entity.name)
+                if before is None:
+                    return
+                prior = len(before.facts) + len(before.suggested_facts)
+                self.vault.add_fact(entity.name, f"{fact} ([[{label}]])", suggested=True)
+                if len(self.vault.get(entity.name).facts) + len(self.vault.get(entity.name).suggested_facts) > prior:
+                    added += 1
+                    job.suggested += 1
+                    if entity.name not in job.updated:
+                        job.updated.append(entity.name)
+                if added >= MAX_SUGGESTED_FACTS:
+                    break
+            job.done += 1
+            job.message = f"Read {job.done} of {len(passages)}"
+            self.emit(job)
+        job.message = f"{added} new fact{'s' if added != 1 else ''} to review" if added else f"No new facts about {entity.name}"
+
     def write_up(self, sid: str) -> Job:
         path = self.sessions_dir() / sid / "transcript.json"
         if not path.is_file():
@@ -593,7 +706,7 @@ class Memory:
                 if isinstance(f, dict)
                 and (about := _name(f.get("about")))
                 and (text := _text(f.get("text")))
-                and not FLEETING.search(text)
+                and not fleeting(text)
             ]
             facts += part_facts[:PART_FACTS]
             part_names = [n for n in out.get("new_names") or [] if isinstance(n, dict) and _name(n.get("name"))]

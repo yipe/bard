@@ -231,6 +231,58 @@ class Entity:
         }
 
 
+def mention_counts(vault: "Vault", sessions_dir: Path) -> dict[str, int]:
+    """How many sessions mention each glossary name, in the transcript or that session's note.
+
+    A name counts once per session, however often it is said. An alias that is an ordinary word
+    ("Dead") does not count, or it would rank a one-off character with the party.
+    """
+    entities = vault.entities()
+    needle_owner: dict[str, str] = {}
+    for e in entities:
+        for n in e.aliases:
+            folded = n.casefold()
+            if len(folded) < 2 or everyday(folded):
+                continue
+            needle_owner.setdefault(folded, e.name)
+    for e in entities:
+        folded = e.name.casefold()
+        if len(folded) >= 2:
+            needle_owner[folded] = e.name
+    if not needle_owner:
+        return {e.name: 0 for e in entities}
+    rx = re.compile(
+        r"(?<![a-z0-9])(?:"
+        + "|".join(re.escape(n) for n in sorted(needle_owner, key=len, reverse=True))
+        + r")(?![a-z0-9])"
+    )
+    present: dict[str, set[str]] = {}
+
+    def take(sid: str, path: Path) -> None:
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore").casefold()
+        except OSError:
+            return
+        found = present.setdefault(sid, set())
+        for hit in rx.findall(text):
+            if owner := needle_owner.get(hit):
+                found.add(owner)
+
+    if sessions_dir.is_dir():
+        for path in sessions_dir.glob("*/transcript.json"):
+            take(path.parent.name, path)
+    notes = vault.root / "Sessions"
+    if notes.is_dir():
+        for path in notes.glob("*.md"):
+            try:
+                head = path.read_text(encoding="utf-8", errors="ignore")[:400]
+            except OSError:
+                continue
+            m = re.search(r"^session_id:\s*(\S+)", head, re.M)
+            take(m.group(1) if m else path.stem, path)
+    return {e.name: sum(e.name in found for found in present.values()) for e in entities}
+
+
 # ------------------------------------------------------------------ markdown
 
 

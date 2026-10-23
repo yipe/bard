@@ -15,8 +15,8 @@ from troubadour.transcript import build
 class FakeLLM:
     """Answers by prompt type, in order; records every call."""
 
-    def __init__(self, notes=(), writeups=(), summary=None):
-        self.notes, self.writeups = list(notes), list(writeups)
+    def __init__(self, notes=(), writeups=(), summary=None, facts=()):
+        self.notes, self.writeups, self.facts = list(notes), list(writeups), list(facts)
         self.summary = summary or {
             "title": "The Desert Road",
             "summary": "Elara led the way.",
@@ -28,6 +28,8 @@ class FakeLLM:
         self.calls.append(user)
         if system is mem.NOTES_SYSTEM:
             return self.notes.pop(0) if self.notes else {}
+        if system is mem.FACT_SYSTEM:
+            return self.facts.pop(0) if self.facts else {"facts": []}
         if system is mem.WRITEUP_SYSTEM:
             return self.writeups.pop(0) if self.writeups else {}
         return self.summary
@@ -590,6 +592,37 @@ def test_only_the_last_part_is_told_it_ends_the_session(setup, monkeypatch):
     parts = [c for c in llm.calls if "Transcript:\n" in c]
     assert len(parts) > 1
     assert [mem.SESSION_END in c for c in parts] == [False] * (len(parts) - 1) + [True]
+
+
+def test_a_spell_slot_is_not_a_fact():
+    assert mem.fleeting("Elara has one third level spell slot remaining.")
+    assert mem.fleeting("Magenta has one hit point.")
+    assert not mem.fleeting("Elara is a cleric of Akadi.")
+
+
+def test_look_for_facts_reads_transcripts_and_notes_and_skips_a_moment(setup, tmp_path):
+    vault, sessions, make = setup
+    vault.create("Elara", "pc")
+    (sessions / "2026-10-08_120000-aaaa").mkdir(parents=True)
+    (sessions / "2026-10-08_120000-aaaa" / "transcript.json").write_text(
+        json.dumps({"messages": [{"text": "Elara has one spell slot remaining."}, {"text": "Elara serves Akadi."}]})
+    )
+    notes = vault.root / "Notes"
+    notes.mkdir()
+    (notes / "Old notes.md").write_text("Elara grew up in Dallon.\nThe weather was hot.\n")
+    llm = FakeLLM(
+        facts=[
+            {"facts": ["Elara has one spell slot remaining.", "Elara serves Akadi."]},
+            {"facts": ["Elara grew up in Dallon."]},
+        ]
+    )
+    job = make(llm).seek_facts("Elara")
+    wait(job)
+    suggested = vault.get("Elara").suggested_facts
+    assert "Elara serves Akadi. ([[2026-10-08_120000-aaaa]])" in suggested
+    assert "Elara grew up in Dallon. ([[Old notes]])" in suggested
+    assert not any("spell slot" in f for f in suggested)
+    assert job.suggested == 2
 
 
 def test_settle_keeps_the_correction_and_drops_the_joke():
