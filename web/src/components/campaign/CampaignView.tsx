@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { BookOpen, Loader2, Upload } from "lucide-react"
+import { BookOpen, Loader2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { TYPE_LABEL, jobActive } from "@/lib/campaign"
 import { campaignActions, useCampaign } from "@/lib/campaignStore"
-import { AskPanel } from "./AskPanel"
 import { CloudBackupButton } from "./CloudBackupButton"
 import { CampaignFacts } from "./CampaignFacts"
 import { EntityEditor } from "./EntityEditor"
@@ -82,41 +80,37 @@ export function CampaignView() {
           <GlossaryList entities={campaign.entities} types={campaign.types} />
           <CampaignFacts facts={campaign.facts} />
         </aside>
-        <main className="min-w-0 flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-2xl space-y-8">
-            <AskPanel />
-            <div className="space-y-2 text-center text-sm text-muted-foreground">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
+          {entity ? (
+            <div className="mx-auto max-w-3xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-semibold">{entity.name}</h2>
+                  <p className="text-sm text-muted-foreground">{TYPE_LABEL[entity.type]} in your glossary</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-auto shrink-0"
+                  aria-label="Close"
+                  onClick={() => campaignActions.select(null)}
+                >
+                  <X />
+                </Button>
+              </div>
+              <EntityEditor key={entity.name} entity={entity} />
+            </div>
+          ) : (
+            <div className="mx-auto max-w-2xl space-y-2 pt-16 text-center text-sm text-muted-foreground">
               <p>Pick an entry to edit it, or import session notes to fill the glossary.</p>
               <p className="text-xs">
                 Every entry is a note in your Obsidian vault. Names and “heard as” spellings help Troubadour
                 spell them right in new transcripts; entries marked for review were suggested by the AI.
               </p>
             </div>
-          </div>
+          )}
         </main>
       </div>
-
-      {/* Non-modal: the glossary stays clickable, so picking another entry swaps the sheet's content. */}
-      <Sheet
-        open={!!entity}
-        onOpenChange={(open) => !open && campaignActions.select(null)}
-        modal={false}
-        disablePointerDismissal
-      >
-        <SheetContent showOverlay={false} className="w-full data-[side=right]:sm:max-w-xl">
-          {entity && (
-            <>
-              <SheetHeader className="pr-12">
-                <SheetTitle>{entity.name}</SheetTitle>
-                <SheetDescription>{TYPE_LABEL[entity.type]} in your glossary</SheetDescription>
-              </SheetHeader>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-                <EntityEditor key={entity.name} entity={entity} />
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
 
       <ImportDialog open={importing} onOpenChange={setImporting} />
     </div>

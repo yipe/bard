@@ -1,5 +1,7 @@
 import { useEffect } from "react"
-import { Feather, TriangleAlert } from "lucide-react"
+import { Feather, MessageCircleQuestion, TriangleAlert } from "lucide-react"
+import { AskPanel } from "@/components/campaign/AskPanel"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AccountMenu } from "@/components/AccountMenu"
 import { CampaignSwitcher } from "@/components/CampaignSwitcher"
 import { CampaignView } from "@/components/campaign/CampaignView"
@@ -60,6 +62,23 @@ export default function App() {
                 </button>
               )
             })}
+            {loaded && (
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 rounded-md px-3 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    />
+                  }
+                >
+                  <MessageCircleQuestion className="size-3.5" /> Ask
+                </PopoverTrigger>
+                <PopoverContent align="start" className="max-h-[70vh] w-[32rem] overflow-y-auto">
+                  <AskPanel />
+                </PopoverContent>
+              </Popover>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             <span

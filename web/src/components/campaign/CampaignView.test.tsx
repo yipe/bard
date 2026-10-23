@@ -209,17 +209,17 @@ describe("glossary list", () => {
 })
 
 describe("entry editor", () => {
-  it("opens the entry in a side sheet, keeps the glossary clickable, and Close deselects", async () => {
+  it("opens the entry in the detail pane, keeps the glossary clickable, and Close deselects", async () => {
     server()
     await renderView()
-    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull()
     await open("Elara")
-    expect(screen.getByRole("dialog", { name: "Elara" })).toBeInTheDocument()
-    await open("Tarsis") // the glossary isn't blocked while the sheet is open
-    expect(screen.getByRole("dialog", { name: "Tarsis" })).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Elara")
+    await open("Tarsis")
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Tarsis")
     expect(useCampaign.getState().selected).toBe("Tarsis")
     fireEvent.click(screen.getByRole("button", { name: "Close" }))
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    await waitFor(() => expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull())
     expect(useCampaign.getState().selected).toBeNull()
   })
 
