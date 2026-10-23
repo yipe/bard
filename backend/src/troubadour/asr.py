@@ -12,7 +12,8 @@ import unicodedata
 
 import numpy as np
 
-from .config import SR, WHISPER_MODEL
+from .config import SR
+from .settings import current as model_settings
 
 _lock = threading.Lock()
 
@@ -90,7 +91,7 @@ def _run(audio: np.ndarray, prompt: str | None, model: str | None = None) -> str
     with _lock:
         result = mlx_whisper.transcribe(
             audio,
-            path_or_hf_repo=model or WHISPER_MODEL,
+            path_or_hf_repo=model or model_settings()["whisper"],
             language="en",
             verbose=None,
             # Benchmarked: these stop repetition loops on trailing noise.

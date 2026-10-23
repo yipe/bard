@@ -254,6 +254,19 @@ export interface Campaign {
   written_up: Record<string, string> /* session id -> vault-relative path of its session page */
   ignored: string[] /* words never suggested again (vault note "Ignored words.md") */
 }
+
+/** Which models this Mac uses. `installed` is what LM Studio is offering right now. */
+export interface ModelSettings {
+  whisper: string
+  whisper_improve: string
+  llm: string
+  memory: string
+  llm_url: string
+  api_key: string
+  speaker: string
+  whisper_options: { id: string; label: string }[]
+  installed: string[]
+}
 export interface CampaignSuggestions {
   misheard: { entity: string; heard: string; count: number; example: string }[]
   unknown: { heard: string; count: number; example: string }[]

@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import config, improve, mics, obsidian, transcript
+from . import config, improve, mics, obsidian, settings, transcript
 from .ask import Asker
 from .audio import list_mics
 from .campaign import TYPES, Vault, mention_counts
@@ -55,6 +55,7 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", config.HOST}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     bus.loop = asyncio.get_running_loop()
+    _apply_models(settings.current())
     engine.start_background()
     auto_backup.start()  # does nothing until the user connects Troubadour Cloud
     yield
@@ -258,6 +259,72 @@ def _sample_files() -> list[dict]:
 # ------------------------------------------------------------------ routes
 
 
+class ModelsIn(BaseModel):
+    whisper: str | None = None
+    whisper_improve: str | None = None
+    llm: str | None = None
+    memory: str | None = None
+    llm_url: str | None = None
+    api_key: str | None = None
+
+
+def _llm_choices() -> list[str]:
+    """LM Studio's current models, plus any this Mac has chosen before."""
+    installed = _installed_llms()
+    out = list(installed)
+    for model in settings.known_llms():
+        if model not in out:
+            out.append(model)
+    return out
+
+
+def _installed_llms() -> list[str]:
+    """Model ids the configured server is offering. Empty when it is down."""
+    import httpx
+
+    chosen = settings.current()
+    headers = {"Authorization": f"Bearer {chosen['api_key']}"} if chosen.get("api_key") else {}
+    try:
+        r = httpx.get(f"{chosen['llm_url'].rstrip('/')}/models", headers=headers, timeout=8)
+        data = r.json().get("data", []) if r.status_code == 200 else []
+    except Exception:
+        return []
+    ids = [m["id"] for m in data if isinstance(m, dict) and isinstance(m.get("id"), str)]
+    return ids[:500]
+
+
+def _apply_models(chosen: dict) -> None:
+    for llm, model in (
+        (engine.cleanup_llm, chosen["llm"]),
+        (memory.llm, chosen["memory"]),
+        (asker.llm, chosen["memory"]),
+    ):
+        llm.model = model
+        llm.url = chosen["llm_url"].rstrip("/")
+        llm.api_key = chosen.get("api_key") or ""
+
+
+@app.get("/api/settings/models")
+def get_models():
+    chosen = settings.current()
+    return {
+        **chosen,
+        "speaker": settings.SPEAKER_MODEL,
+        "whisper_options": list(settings.WHISPER_OPTIONS),
+        "installed": _llm_choices(),
+    }
+
+
+@app.put("/api/settings/models")
+def put_models(body: ModelsIn):
+    try:
+        chosen = settings.update(body.model_dump())
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    _apply_models(chosen)
+    return {**chosen, "speaker": settings.SPEAKER_MODEL, "whisper_options": list(settings.WHISPER_OPTIONS), "installed": _llm_choices()}
+
+
 @app.get("/api/state")
 def state():
     return engine.snapshot()
@@ -332,7 +399,7 @@ def improve_transcript(sid: str):
             "improve",
             sid,
             lambda job: improve.run(
-                job, engine, sid, lambda: memory.emit(job), model=config.WHISPER_IMPROVE_MODEL
+                job, engine, sid, lambda: memory.emit(job), model=settings.current()["whisper_improve"]
             ),
         ).to_json()
 

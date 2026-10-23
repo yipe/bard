@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { CircleUser, ExternalLink, Loader2 } from "lucide-react"
+import { CircleUser, ExternalLink, Loader2, Settings } from "lucide-react"
+import { ModelsDialog } from "@/components/ModelsDialog"
 import { DprcalcMark } from "@/components/DprcalcMark"
 import { running } from "@/components/campaign/CloudBackupButton"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -32,6 +33,7 @@ export function AccountMenu() {
   const account = useCloud((s) => s.account)
   const backingUp = useCampaign(running("backup"))
   const [open, setOpen] = useState(false)
+  const [models, setModels] = useState(false)
   const connected = !!status?.connected
 
   useEffect(() => {
@@ -67,6 +69,17 @@ export function AccountMenu() {
         )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 space-y-2 p-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={() => {
+            setOpen(false)
+            setModels(true)
+          }}
+        >
+          <Settings /> Models
+        </Button>
         {!connected ? (
           <div className="space-y-2 p-1">
             <p className="text-muted-foreground">
@@ -133,6 +146,7 @@ export function AccountMenu() {
           </>
         )}
       </PopoverContent>
+      <ModelsDialog open={models} onOpenChange={setModels} />
     </Popover>
   )
 }

@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import asr, cleanup, config, levels, transcript
+from . import asr, cleanup, config, levels, settings, transcript
 from .audio import FileSource, MicSource, Recorder, load_audio, wav_bytes
 from .campaign import Corrector, Entity, english
 from .memory import MemoryLLM
@@ -986,7 +986,7 @@ class Engine:
             "audio_monitor": self.audio_monitor,
             # Speech models (Whisper, VAD, voices) load once at start-up: ~20 s, or fail for good.
             "asr": {
-                "model": config.WHISPER_MODEL,
+                "model": settings.current()["whisper"],
                 "state": "error" if self.load_error else "ready" if self.ready.is_set() else "loading",
             },
             "training": {"player_id": job.player_id} if job else None,

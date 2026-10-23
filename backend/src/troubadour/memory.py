@@ -66,34 +66,41 @@ _KIND = {"did": "happened", "aside": "joke", "happened": "happened", "joke": "jo
 class MemoryLLM:
     """OpenAI-compatible chat with a JSON schema (LM Studio supports structured output)."""
 
-    def __init__(self, url: str = config.LLM_URL, model: str = config.MEMORY_LLM_MODEL, timeout: float = 600):
+    def __init__(self, url: str = config.LLM_URL, model: str = config.MEMORY_LLM_MODEL, timeout: float = 600, api_key: str = ""):
         self.url = url.rstrip("/")
         self.model = model
+        self.api_key = api_key
         self.client = httpx.Client(timeout=timeout)
+
+    def _headers(self) -> dict:
+        return {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
 
     def healthy(self) -> bool:
         """The server answers and has this model."""
         try:
-            r = self.client.get(f"{self.url}/models", timeout=3)
+            r = self.client.get(f"{self.url}/models", headers=self._headers(), timeout=3)
             data = r.json().get("data", []) if r.status_code == 200 else []
             return any(isinstance(m, dict) and m.get("id") == self.model for m in data)
         except Exception:  # down, wrong service on the port, non-JSON reply: all mean "not usable"
             return False
 
     def json(self, system: str, user: str, schema: dict, max_tokens: int = 4000) -> dict:
-        r = self.client.post(
-            f"{self.url}/chat/completions",
-            json={
-                "model": self.model,
-                "temperature": 0,
-                "max_tokens": max_tokens,
-                "reasoning_effort": config.MEMORY_REASONING,
-                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                "response_format": {"type": "json_schema", "json_schema": {"name": "out", "strict": True, "schema": schema}},
-            },
-        )
+        payload = {
+            "model": self.model,
+            "temperature": 0,
+            "max_tokens": max_tokens,
+            "reasoning_effort": config.MEMORY_REASONING,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "response_format": {"type": "json_schema", "json_schema": {"name": "out", "strict": True, "schema": schema}},
+        }
+        r = self.client.post(f"{self.url}/chat/completions", headers=self._headers(), json=payload)
+        # OpenRouter and some local servers reject reasoning_effort or strict json_schema.
+        if r.status_code == 400:
+            payload.pop("reasoning_effort", None)
+            payload.pop("response_format", None)
+            r = self.client.post(f"{self.url}/chat/completions", headers=self._headers(), json=payload)
         if r.is_error:
-            raise RuntimeError(f"LM Studio couldn't answer ({r.status_code}): {_server_error(r)}")
+            raise RuntimeError(f"The model server couldn't answer ({r.status_code}): {_server_error(r)}")
         content = r.json()["choices"][0]["message"]["content"] or ""
         match = re.search(r"\{.*\}", content, re.S)
         try:

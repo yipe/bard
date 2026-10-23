@@ -7,6 +7,7 @@ import type {
   CloudVault,
   Campaigns,
   CampaignJob,
+  ModelSettings,
   CampaignSuggestions,
   Entity,
   EntityType,
@@ -165,6 +166,11 @@ export const api = {
   recheckLlm: () => req<Session["llm"]>("POST", "/api/llm/recheck"),
 
   campaign: () => req<Campaign>("GET", "/api/campaign"),
+  modelSettings: () => req<ModelSettings>("GET", "/api/settings/models"),
+  saveModelSettings: (
+    body: Pick<ModelSettings, "whisper" | "whisper_improve" | "llm" | "memory" | "llm_url" | "api_key">,
+  ) =>
+    req<ModelSettings>("PUT", "/api/settings/models", body),
   campaignSuggestions: () => req<CampaignSuggestions>("GET", "/api/campaign/suggestions"),
   createEntity: (b: EntityCreate) => req<Entity>("POST", "/api/campaign/entities", b),
   updateEntity: (name: string, b: EntityPatch) => req<Entity>("PATCH", entityUrl(name), b),
