@@ -6,7 +6,7 @@ import type { SavedSession } from "./types"
 
 /**
  * Where the UI is, as a URL path: `/setup`, `/session`, `/history[/<session id>]`,
- * `/campaign[/<entry name>]`. The stores stay the source of truth; the URL mirrors them, and a
+ * `/campaign[/<entry name>]`, `/ask`. The stores stay the source of truth; the URL mirrors them, and a
  * URL (deep link, reload, back/forward) is applied to them.
  */
 export interface Route {
@@ -15,7 +15,7 @@ export interface Route {
   entry?: string
 }
 
-const VIEWS: readonly string[] = ["setup", "session", "history", "campaign"] satisfies View[]
+const VIEWS: readonly string[] = ["setup", "session", "history", "campaign", "ask"] satisfies View[]
 
 /** null for `/` and unknown paths: the app picks the view. */
 export function parsePath(path: string): Route | null {

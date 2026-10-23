@@ -17,7 +17,7 @@ import type {
   Voice,
 } from "./types"
 
-export type View = "setup" | "session" | "history" | "campaign"
+export type View = "setup" | "session" | "history" | "campaign" | "ask"
 
 interface State {
   connected: boolean

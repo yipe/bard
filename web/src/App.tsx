@@ -1,7 +1,6 @@
 import { useEffect } from "react"
-import { Feather, MessageCircleQuestion, TriangleAlert } from "lucide-react"
-import { AskPanel } from "@/components/campaign/AskPanel"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Feather, TriangleAlert } from "lucide-react"
+import { AskView } from "@/components/campaign/AskPanel"
 import { AccountMenu } from "@/components/AccountMenu"
 import { CampaignSwitcher } from "@/components/CampaignSwitcher"
 import { CampaignView } from "@/components/campaign/CampaignView"
@@ -13,9 +12,10 @@ import { startRouting } from "@/lib/route"
 import { connect, actions, useStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
-const TABS: { id: "sessions" | "campaign"; label: string }[] = [
+const TABS: { id: "sessions" | "campaign" | "ask"; label: string }[] = [
   { id: "sessions", label: "Sessions" },
   { id: "campaign", label: "Campaign" },
+  { id: "ask", label: "Ask" },
 ]
 
 export default function App() {
@@ -39,17 +39,18 @@ export default function App() {
           {loaded && <CampaignSwitcher />}
           <nav className="flex gap-1 rounded-lg bg-muted p-1">
             {TABS.map((t) => {
-              const on = t.id === "campaign" ? view === "campaign" : view !== "campaign"
+              const on = t.id === "sessions" ? view !== "campaign" && view !== "ask" : view === t.id
               return (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => {
-                    if (t.id === "campaign") actions.setView("campaign")
-                    else if (view === "campaign") {
-                      const s = useStore.getState()
-                      actions.setView(s.viewing ? "history" : running ? "session" : "setup")
-                    }
+                    if (t.id === "sessions") {
+                      if (view === "campaign" || view === "ask") {
+                        const s = useStore.getState()
+                        actions.setView(s.viewing ? "history" : running ? "session" : "setup")
+                      }
+                    } else actions.setView(t.id)
                   }}
                   aria-current={on ? "page" : undefined}
                   className={cn(
@@ -62,24 +63,13 @@ export default function App() {
                 </button>
               )
             })}
-            {loaded && (
-              <Popover>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 rounded-md px-3 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    />
-                  }
-                >
-                  <MessageCircleQuestion className="size-3.5" /> Ask
-                </PopoverTrigger>
-                <PopoverContent align="start" className="max-h-[70vh] w-[32rem] overflow-y-auto">
-                  <AskPanel />
-                </PopoverContent>
-              </Popover>
-            )}
           </nav>
+          {sessionStatus === "running" && (
+            <span className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-red-600" role="status">
+              <span className="size-2.5 rounded-full bg-red-600 ring-2 ring-red-600/30" aria-hidden />
+              RECORDING
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             <span
               className={cn(
@@ -103,6 +93,8 @@ export default function App() {
           </div>
         ) : view === "campaign" ? (
           <CampaignView />
+        ) : view === "ask" ? (
+          <AskView />
         ) : (
           <HistoryView />
         )}

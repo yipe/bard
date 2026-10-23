@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { FileText, Loader2, MessageCircleQuestion, ScrollText, Send, User } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,20 @@ const PROGRESS: Partial<Record<CampaignAnswer["state"], string>> = {
   queued: "Waiting for the model…",
   searching: "Searching transcripts and notes…",
   thinking: "Reading what it found…",
+}
+
+/** Full tab: the question box and previous answers fill the page under the tab bar. */
+export function AskView() {
+  useEffect(() => {
+    void campaignActions.refresh()
+  }, [])
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div className="mx-auto w-full max-w-2xl">
+        <AskPanel />
+      </div>
+    </div>
+  )
 }
 
 /** Ask the local LLM about the campaign; it answers from transcripts and notes, citing them. */

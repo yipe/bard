@@ -39,6 +39,7 @@ describe("parsePath / routePath", () => {
       { view: "history", session: "2026-10-15_193130-762b" },
       { view: "campaign" },
       { view: "campaign", entry: "St. Cuthbert / 100% ok?" },
+      { view: "ask" },
     ] as const) {
       expect(parsePath(routePath(r))).toEqual(r)
     }
