@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { History } from "lucide-react"
+import { Plus } from "lucide-react"
+import { SessionView } from "@/components/session/SessionView"
+import { SetupView } from "@/components/setup/SetupView"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "@/lib/api"
 import { dateTime } from "@/lib/format"
 import { actions, useStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import type { SavedSession } from "@/lib/types"
 import { useSavedSessions } from "@/lib/useSavedSessions"
 import { SavedSessionRow } from "./SavedSessionRow"
@@ -19,13 +21,64 @@ function sameSitting(earlier: SavedSession, later: SavedSession): boolean {
   return gap >= -1 && gap <= SAME_SITTING_S
 }
 
-/** History tab: every saved session, or the viewer for the one that's open. */
+/** Sessions: the list on the left, the open session in the middle, its tools on the right. */
 export function HistoryView() {
+  const view = useStore((s) => s.view)
   const viewing = useStore((s) => s.viewing)
-  if (viewing) return <SessionViewer key={viewing.id} summary={viewing} onBack={actions.closeSavedSession} />
+  const status = useStore((s) => s.session?.status ?? "idle")
+  const live = status === "running" || status === "paused"
+
   return (
-    <div className="flex-1 overflow-y-auto">
-      <HistoryList />
+    <div className="flex min-h-0 flex-1">
+      <aside className="flex w-72 shrink-0 flex-col border-r">
+        <div className="border-b p-2">
+          <Button
+            size="sm"
+            variant={view === "setup" ? "secondary" : "outline"}
+            className="w-full justify-start"
+            onClick={() => {
+              actions.closeSavedSession()
+              actions.setView("setup")
+            }}
+          >
+            <Plus /> New Session
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {live && (
+            <button
+              type="button"
+              onClick={() => {
+                actions.closeSavedSession()
+                actions.setView("session")
+              }}
+              className={cn(
+                "mb-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm",
+                view === "session" ? "bg-muted font-medium" : "hover:bg-muted/60",
+              )}
+            >
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {status === "paused" ? "Paused session" : "Live session"}
+            </button>
+          )}
+          <HistoryList />
+        </div>
+      </aside>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {view === "session" ? (
+          <SessionView />
+        ) : view === "history" && viewing ? (
+          <SessionViewer key={viewing.id} summary={viewing} onBack={actions.closeSavedSession} />
+        ) : view === "setup" ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <SetupView />
+          </div>
+        ) : (
+          <p className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Select a session, or start a new one.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -133,14 +186,7 @@ function HistoryList() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="size-4" /> Saved sessions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div>
           {error ? (
             <p className="text-sm text-destructive">Couldn't load saved sessions: {error}</p>
           ) : sessions === null ? (
@@ -220,8 +266,6 @@ function HistoryList() {
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

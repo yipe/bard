@@ -4,19 +4,15 @@ import { AccountMenu } from "@/components/AccountMenu"
 import { CampaignSwitcher } from "@/components/CampaignSwitcher"
 import { CampaignView } from "@/components/campaign/CampaignView"
 import { HistoryView } from "@/components/history/HistoryView"
-import { SessionView } from "@/components/session/SessionView"
-import { SetupView } from "@/components/setup/SetupView"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { startRouting } from "@/lib/route"
-import { connect, actions, useStore, type View } from "@/lib/store"
+import { connect, actions, useStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
-const TABS: { id: View; label: string }[] = [
-  { id: "setup", label: "Setup" },
-  { id: "session", label: "Session" },
-  { id: "history", label: "History" },
+const TABS: { id: "sessions" | "campaign"; label: string }[] = [
+  { id: "sessions", label: "Sessions" },
   { id: "campaign", label: "Campaign" },
 ]
 
@@ -40,21 +36,30 @@ export default function App() {
           </div>
           {loaded && <CampaignSwitcher />}
           <nav className="flex gap-1 rounded-lg bg-muted p-1">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => actions.setView(t.id)}
-                aria-current={view === t.id ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors",
-                  view === t.id ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-                {t.id === "session" && running && <span className="size-1.5 rounded-full bg-emerald-500" />}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const on = t.id === "campaign" ? view === "campaign" : view !== "campaign"
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    if (t.id === "campaign") actions.setView("campaign")
+                    else if (view === "campaign") {
+                      const s = useStore.getState()
+                      actions.setView(s.viewing ? "history" : running ? "session" : "setup")
+                    }
+                  }}
+                  aria-current={on ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1 text-sm transition-colors",
+                    on ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t.label}
+                  {t.id === "sessions" && running && <span className="size-1.5 rounded-full bg-emerald-500" />}
+                </button>
+              )
+            })}
           </nav>
           <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
             <span
@@ -77,16 +82,10 @@ export default function App() {
           <div className="flex flex-1 items-center justify-center text-muted-foreground">
             Waiting for the Troubadour server…
           </div>
-        ) : view === "setup" ? (
-          <div className="flex-1 overflow-y-auto">
-            <SetupView />
-          </div>
-        ) : view === "history" ? (
-          <HistoryView />
         ) : view === "campaign" ? (
           <CampaignView />
         ) : (
-          <SessionView />
+          <HistoryView />
         )}
       </div>
       <Toaster position="bottom-right" />

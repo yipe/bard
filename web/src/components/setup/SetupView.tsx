@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { actions, useStore } from "@/lib/store"
 import { LibraryList } from "./LibraryList"
-import { PastSessions } from "./PastSessions"
 import { PlayerCard } from "./PlayerCard"
 import { StartPanel } from "./StartPanel"
 
@@ -56,7 +55,6 @@ export function SetupView() {
       </section>
       <aside className="space-y-6">
         <StartPanel />
-        <PastSessions />
       </aside>
     </div>
   )

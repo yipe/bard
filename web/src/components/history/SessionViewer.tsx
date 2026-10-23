@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Virtuoso } from "react-virtuoso"
-import { ArrowLeft, AudioLines, FileX, Loader2, PanelRightClose } from "lucide-react"
+import { ArrowLeft, AudioLines, Download, FileX, Loader2, PanelRightClose } from "lucide-react"
 import { RecordingQualityPanel } from "@/components/audio/RecordingQualityPanel"
 import { PlayerBox, UnnamedShareChip } from "@/components/transcript/PlayerBox"
 import { TranscriptRow, TranscriptSpacer } from "@/components/transcript/TranscriptRow"
-import { Button } from "@/components/ui/button"
-import { api, sessionAudioUrl } from "@/lib/api"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { api, sessionAudioUrl, transcriptUrl } from "@/lib/api"
 import { dateTime, hms } from "@/lib/format"
 import { loadRecord, type LoadedRecord } from "@/lib/record"
 import { sourceLabel } from "@/lib/source"
@@ -14,11 +14,13 @@ import { recordTalkTime } from "@/lib/talkTime"
 import type { SavedSession } from "@/lib/types"
 import { WriteUpButton } from "@/components/campaign/WriteUpButton"
 import { actions, useStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import { TranscriptTools } from "./TranscriptTools"
-import { SessionDownloads } from "./SavedSessionRow"
 
 type LoadState =
   { status: "loading" } | { status: "error"; message: string } | { status: "ready"; record: LoadedRecord }
+
+type RailTab = "audio" | "transcript" | "writeup"
 
 /**
  * Read-only view of a saved session. Its data comes only from the saved record and lives in local
@@ -28,6 +30,8 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
   const [state, setState] = useState<LoadState>({ status: "loading" })
   /** Bumped to reload the record after it changed on the server (improved, spell-fixed, restored). */
   const [revision, setRevision] = useState(0)
+  const [railOpen, setRailOpen] = useState(true)
+  const [railTab, setRailTab] = useState<RailTab>(summary.audio ? "audio" : "transcript")
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
@@ -75,41 +79,12 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
-          <Button size="sm" variant="ghost" onClick={onBack}>
-            <ArrowLeft /> All sessions
-          </Button>
-          <div className="min-w-0">
-            <div className="text-sm font-medium">{dateTime(summary.started_at)}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {sourceLabel(summary.source)} · <span className="tabular-nums">{hms(summary.duration_s)}</span> ·{" "}
-              {summary.lines} lines
-            </div>
-          </div>
-          <div className="ml-auto">
-            <WriteUpButton sessionId={summary.id} />
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-4 py-1.5">
-          {summary.audio && (
-            <audio
-              ref={audioRef}
-              controls
-              preload="none"
-              src={sessionAudioUrl(summary.id)}
-              className="h-8 w-72 max-w-full"
-            />
-          )}
-          <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
-            <SessionDownloads session={summary} />
-            <TranscriptTools
-              summary={summary}
-              improved={state.status === "ready" ? state.record.improved : null}
-              spelling={state.status === "ready" ? state.record.spelling : null}
-              retranscribed={state.status === "ready" ? (state.record.retranscribed ?? null) : null}
-              onReload={reload}
-            />
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2">
+        <div className="min-w-0">
+          <div className="text-sm font-medium">{dateTime(summary.started_at)}</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {sourceLabel(summary.source)} · <span className="tabular-nums">{hms(summary.duration_s)}</span> ·{" "}
+            {summary.lines} lines
           </div>
         </div>
       </header>
@@ -126,28 +101,114 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
           </Button>
         </div>
       ) : (
-        <RecordBody record={state.record} seek={seek} audioQuality={summary.audio ? summary.id : null} />
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <RecordBody record={state.record} seek={seek} />
+          {railOpen ? (
+            <aside className="flex min-h-0 w-full shrink-0 flex-col border-t lg:w-80 lg:border-t-0 lg:border-l">
+              <div className="flex items-center gap-1 border-b px-2 py-1">
+                <RailTabButton current={railTab} tab="audio" onSelect={setRailTab} />
+                <RailTabButton current={railTab} tab="transcript" onSelect={setRailTab} />
+                <RailTabButton current={railTab} tab="writeup" onSelect={setRailTab} />
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="ml-auto"
+                  aria-label="Hide session tools"
+                  onClick={() => setRailOpen(false)}
+                >
+                  <PanelRightClose />
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                {railTab === "audio" && (
+                  <div className="flex flex-col gap-3">
+                    {summary.audio ? (
+                      <>
+                        <audio
+                          ref={audioRef}
+                          controls
+                          preload="none"
+                          src={sessionAudioUrl(summary.id)}
+                          className="h-8 w-full"
+                        />
+                        <a href={sessionAudioUrl(summary.id)} download className={downloadClass}>
+                          <Download /> Download audio
+                        </a>
+                        <RecordingQualityPanel sessionId={summary.id} />
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">This session has no recording.</p>
+                    )}
+                  </div>
+                )}
+                {railTab === "transcript" && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col items-start gap-1">
+                      {(["md", "json"] as const).map((fmt) => (
+                        <a key={fmt} href={transcriptUrl(fmt, summary.id)} download className={downloadClass}>
+                          <Download /> Download .{fmt}
+                        </a>
+                      ))}
+                    </div>
+                    <TranscriptTools
+                      summary={summary}
+                      improved={state.record.improved}
+                      spelling={state.record.spelling}
+                      retranscribed={state.record.retranscribed ?? null}
+                      onReload={reload}
+                    />
+                  </div>
+                )}
+                {railTab === "writeup" && <WriteUpButton sessionId={summary.id} />}
+              </div>
+            </aside>
+          ) : (
+            <div className="flex w-full shrink-0 justify-center border-t py-2 lg:w-12 lg:flex-col lg:border-t-0 lg:border-l">
+              <Button variant="ghost" size="icon" aria-label="Show session tools" onClick={() => setRailOpen(true)}>
+                <AudioLines />
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
 }
 
-function RecordBody({
-  record,
-  seek,
-  audioQuality,
+const RAIL_LABEL: Record<RailTab, string> = { audio: "Audio", transcript: "Transcript", writeup: "Write-up" }
+
+const downloadClass = cn(buttonVariants({ size: "sm", variant: "ghost" }), "justify-start")
+
+function RailTabButton({
+  current,
+  tab,
+  onSelect,
 }: {
-  record: LoadedRecord
-  seek?: (t: number) => void
-  /** Session id when its recording can be measured (it has audio); null: no side panel. */
-  audioQuality: string | null
+  current: RailTab
+  tab: RailTab
+  onSelect: (tab: RailTab) => void
 }) {
+  const on = current === tab
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={() => onSelect(tab)}
+      className={cn(
+        "rounded-md px-2 py-1 text-sm",
+        on ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {RAIL_LABEL[tab]}
+    </button>
+  )
+}
+
+function RecordBody({ record, seek }: { record: LoadedRecord; seek?: (t: number) => void }) {
   const talk = useMemo(() => recordTalkTime(record.lines), [record.lines])
-  const [qualityOpen, setQualityOpen] = useState(true)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <main className="flex min-h-[60vh] min-w-0 flex-1 flex-col lg:min-h-0">
+    <main className="flex min-h-[60vh] min-w-0 flex-1 flex-col lg:min-h-0">
         {(record.players.length > 0 || talk.unassigned > 0) && (
           <>
             <div className="flex flex-wrap gap-3 px-4 py-3">
@@ -189,37 +250,6 @@ function RecordBody({
             />
           </div>
         )}
-      </main>
-      {audioQuality &&
-        (qualityOpen ? (
-          <aside className="flex min-h-0 w-full shrink-0 flex-col overflow-y-auto border-t p-4 lg:w-80 lg:border-t-0 lg:border-l">
-            <h3 className="flex items-center gap-2 pb-3 text-sm font-semibold">
-              <AudioLines className="size-4" /> Audio quality
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="ml-auto"
-                aria-label="Hide audio quality"
-                onClick={() => setQualityOpen(false)}
-              >
-                <PanelRightClose />
-              </Button>
-            </h3>
-            <RecordingQualityPanel sessionId={audioQuality} />
-          </aside>
-        ) : (
-          <div className="flex w-full shrink-0 justify-center border-t py-2 lg:w-12 lg:flex-col lg:border-t-0 lg:border-l">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Show audio quality"
-              title="Show audio quality"
-              onClick={() => setQualityOpen(true)}
-            >
-              <AudioLines />
-            </Button>
-          </div>
-        ))}
-    </div>
+    </main>
   )
 }

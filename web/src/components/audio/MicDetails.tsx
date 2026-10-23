@@ -33,7 +33,7 @@ const ADVICE: Record<MicCheck["id"], string> = {
     "This mic needs people close to it. Put it in the middle of the table, or use one made to pick up a room.",
   wired: "Bluetooth squeezes the mic's sound. Use a wired (USB) mic, or the mic on the computer.",
   rate: "Set this input to 48 kHz (or 44.1 kHz) in Audio MIDI Setup.",
-  measured: "Past sessions with this mic sounded poor. Open them in History → Audio quality to see why.",
+  measured: "Past sessions with this mic sounded poor. Open them under Sessions → Audio to see why.",
 }
 const ADVICE_ORDER: MicCheck["id"][] = ["around", "distance", "wired", "rate", "measured"]
 

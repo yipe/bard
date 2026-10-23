@@ -27,7 +27,7 @@ export function WriteUpButton({ sessionId }: { sessionId: string }) {
   const page = campaign?.written_up[sessionId]
 
   return (
-    <span className="flex flex-wrap items-center gap-2 text-xs">
+    <span className="flex flex-col items-start gap-3 text-sm">
       <Button
         size="sm"
         variant="outline"

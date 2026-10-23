@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react"
-import { AlertCircle, AudioLines, ChevronDown, Loader2, SpellCheck, Undo2, Wand2 } from "lucide-react"
+import { AlertCircle, AudioLines, Loader2, SpellCheck, Undo2, Wand2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { api } from "@/lib/api"
 import { jobActive, jobCount } from "@/lib/campaign"
 import { attempt, campaignActions, useCampaign } from "@/lib/campaignStore"
@@ -71,7 +70,6 @@ export function TranscriptTools({
   onReload: () => void
 }) {
   const jobs = useCampaign((s) => s.jobs)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [confirmRestore, setConfirmRestore] = useState(false)
   const [confirmRetranscribe, setConfirmRetranscribe] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
@@ -105,7 +103,6 @@ export function TranscriptTools({
   }, [latest, onReload])
 
   const start = async (kind: ToolKind) => {
-    setMenuOpen(false)
     setBusy(true)
     const j = await attempt(() => TOOLS[kind].start(summary.id))
     setBusy(false)
@@ -124,83 +121,71 @@ export function TranscriptTools({
     onReload()
   }
 
-  const active = running[0]
-  const activeJob = active ? latest[active] : undefined
-
-  const action = (kind: ToolKind) => (
-    <button
-      key={kind}
-      type="button"
-      aria-label={TOOLS[kind].label}
-      disabled={anyRunning || busy}
-      onClick={() => (kind === "retranscribe" ? setConfirmRetranscribe(true) : start(kind))}
-      className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-muted disabled:opacity-50"
-    >
-      <span className="flex items-center gap-2">
-        {TOOLS[kind].icon} {TOOLS[kind].label}
-      </span>
-      <span className="text-xs text-muted-foreground">{TOOLS[kind].tip}</span>
-    </button>
-  )
+  const action = (kind: ToolKind) => {
+    const job = latest[kind]
+    const isRunning = !!job && jobActive(job)
+    return (
+      <button
+        key={kind}
+        type="button"
+        aria-label={TOOLS[kind].label}
+        disabled={anyRunning || busy}
+        onClick={() => (kind === "retranscribe" ? setConfirmRetranscribe(true) : start(kind))}
+        className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-muted disabled:opacity-50"
+      >
+        <span className="flex items-center gap-2">
+          {isRunning ? <Loader2 className="size-4 animate-spin" /> : TOOLS[kind].icon} {TOOLS[kind].label}
+          {isRunning && <span className="text-muted-foreground tabular-nums">{jobCount(job)}</span>}
+        </span>
+        <span className="text-xs text-muted-foreground">{TOOLS[kind].tip}</span>
+      </button>
+    )
+  }
 
   return (
-    <span className="flex flex-wrap items-center gap-2 text-xs">
-      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger
-          render={
-            <Button size="sm" variant="ghost" disabled={anyRunning || busy} aria-label={active ? TOOLS[active].label : "Transcript"} />
-          }
-        >
-          {active ? <Loader2 className="animate-spin" /> : <Wand2 />}
-          {active ? TOOLS[active].label : "Transcript"}
-          {activeJob && <span className="text-muted-foreground tabular-nums">{jobCount(activeJob)}</span>}
-          {!active && <ChevronDown />}
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-80 space-y-1 p-2">
-          {summary.replayable && action("improve")}
-          {summary.audio && !confirmRetranscribe && action("retranscribe")}
-          {confirmRetranscribe && (
-            <div className="space-y-2 px-2 py-1.5 text-muted-foreground">
-              <p>A copy of this transcript is saved first. Speakers you fixed by hand can still move. The words stay.</p>
-              <div className="flex gap-2">
-                <Button
-                  size="xs"
-                  variant="destructive"
-                  disabled={busy}
-                  onClick={() => {
-                    setConfirmRetranscribe(false)
-                    void start("retranscribe")
-                  }}
-                >
-                  Retranscribe anyway
-                </Button>
-                <Button size="xs" variant="ghost" onClick={() => setConfirmRetranscribe(false)}>
-                  Cancel
-                </Button>
-              </div>
+    <div className="flex flex-col gap-2 text-sm">
+      {summary.replayable && action("improve")}
+      {summary.audio && !confirmRetranscribe && action("retranscribe")}
+      {confirmRetranscribe && (
+        <div className="space-y-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground">
+          <p>A copy of this transcript is saved first. Speakers you fixed by hand can still move. The words stay.</p>
+          <div className="flex gap-2">
+            <Button
+              size="xs"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => {
+                setConfirmRetranscribe(false)
+                void start("retranscribe")
+              }}
+            >
+              Retranscribe anyway
+            </Button>
+            <Button size="xs" variant="ghost" onClick={() => setConfirmRetranscribe(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+      {action("spelling")}
+      {(improved || spelling || retranscribed) && !anyRunning && (
+        <div className="border-t px-2 pt-2">
+          {confirmRestore ? (
+            <div className="flex gap-2">
+              <Button size="xs" variant="destructive" disabled={busy} onClick={restore}>
+                Confirm restore
+              </Button>
+              <Button size="xs" variant="ghost" onClick={() => setConfirmRestore(false)}>
+                Cancel
+              </Button>
             </div>
+          ) : (
+            <Button size="xs" variant="ghost" disabled={busy} onClick={() => setConfirmRestore(true)}>
+              <Undo2 /> Restore original
+            </Button>
           )}
-          {action("spelling")}
-          {(improved || spelling || retranscribed) && !anyRunning && (
-            <div className="border-t px-2 pt-2">
-              {confirmRestore ? (
-                <div className="flex gap-2">
-                  <Button size="xs" variant="destructive" disabled={busy} onClick={restore}>
-                    Confirm restore
-                  </Button>
-                  <Button size="xs" variant="ghost" onClick={() => setConfirmRestore(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button size="xs" variant="ghost" disabled={busy} onClick={() => setConfirmRestore(true)}>
-                  <Undo2 /> Restore original
-                </Button>
-              )}
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+        </div>
+      )}
       {running.map((kind) =>
         latest[kind]?.message ? (
           <span key={kind} data-testid={`${kind}-status`} className="text-muted-foreground">
@@ -248,6 +233,6 @@ export function TranscriptTools({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </span>
+    </div>
   )
 }
