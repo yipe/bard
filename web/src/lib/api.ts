@@ -97,6 +97,8 @@ const entityUrl = (name: string) => `/api/campaign/entities/${encodeURIComponent
 
 export const api = {
   sessions: () => req<SavedSession[]>("GET", "/api/sessions"),
+  /** Append the later saved session onto the earlier one. Returns the session that remains. */
+  mergeSessions: (ids: [string, string]) => req<SavedSession>("POST", "/api/sessions/merge", { ids }),
   sessionRecord: (id: string) => req<SessionRecord>("GET", transcriptUrl("json", id)),
   /** Re-transcribe a saved session with the current glossary (background job). */
   improveSession: (id: string) => req<CampaignJob>("POST", `/api/sessions/${encodeURIComponent(id)}/improve`),
@@ -154,7 +156,11 @@ export const api = {
     }),
   // Session responses are deliberately not applied to the store: WS events are the only source of truth.
   startSession: (source: Source) => req<Session>("POST", "/api/session/start", { source }),
+  pauseSession: () => req<Session>("POST", "/api/session/pause"),
+  resumeSession: () => req<Session>("POST", "/api/session/resume"),
   stopSession: () => req<Session>("POST", "/api/session/stop"),
+  /** Probe LM Studio now. The new status arrives as session.updated. */
+  recheckLlm: () => req<Session["llm"]>("POST", "/api/llm/recheck"),
 
   campaign: () => req<Campaign>("GET", "/api/campaign"),
   campaignSuggestions: () => req<CampaignSuggestions>("GET", "/api/campaign/suggestions"),

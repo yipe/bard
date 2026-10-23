@@ -14,8 +14,8 @@ Deeper guides: `backend/AGENTS.md`, `web/AGENTS.md`. Design, measurements and hi
 |---|---|
 | Install everything | `yarn setup` (uv + pnpm) |
 | Run the app | `yarn start` → http://127.0.0.1:8765 (serves `web/dist`) |
-| Rebuild the UI, then run the app | `yarn dev` (= `yarn build && yarn start`) |
-| UI dev server | `yarn dev:web` (Vite, proxies to :8765) |
+| API + Vite, with fast refresh | `yarn dev` (`yarn start` and `yarn dev:web`) |
+| UI dev server only | `yarn dev:web` (Vite, proxies to :8765) |
 | All checks (run before every commit) | `yarn check` = format:check, lint, typecheck, tests, build |
 | Format | `yarn format` |
 | Live regression check against a running server | `yarn check:live` |

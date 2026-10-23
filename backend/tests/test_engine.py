@@ -308,6 +308,19 @@ def test_start_with_missing_mic_changes_nothing(engine, monkeypatch):
     assert len(engine.messages) == say_before
 
 
+def test_pause_holds_the_same_session(engine):
+    sess = engine.live
+    assert engine.pause()["status"] == "paused"
+    assert sess.paused and sess.source.paused
+    assert engine.live is sess
+    assert engine.resume()["status"] == "running"
+    assert not sess.paused and not sess.source.paused
+    assert engine.live is sess
+    engine.pause()
+    assert engine.stop()["status"] == "stopping"
+    assert sess.source.stopped
+
+
 def test_session_ends_when_models_fail_to_load(engine):
     # Started while the models were still loading, then loading failed: the session must not
     # stay "running" with nobody consuming its frames.

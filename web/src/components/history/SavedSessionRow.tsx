@@ -29,9 +29,28 @@ export function SessionDownloads({ session: s }: { session: SavedSession }) {
 }
 
 /** A saved session in a list; clicking it opens the read-only viewer in History. */
-export function SavedSessionRow({ session: s }: { session: SavedSession }) {
+export function SavedSessionRow({
+  session: s,
+  selected = false,
+  onSelect,
+}: {
+  session: SavedSession
+  selected?: boolean
+  onSelect?: (id: string, on: boolean) => void
+}) {
   return (
     <li data-session-id={s.id} className="py-1.5 first:pt-0 last:pb-0">
+      <div className="flex items-start gap-2">
+      {onSelect && (
+        <input
+          type="checkbox"
+          className="mt-2"
+          aria-label={`Select session ${dateTime(s.started_at)}`}
+          checked={selected}
+          onChange={(e) => onSelect(s.id, e.target.checked)}
+        />
+      )}
+      <div className="min-w-0 flex-1">
       <button
         type="button"
         onClick={() => actions.openSavedSession(s)}
@@ -59,6 +78,8 @@ export function SavedSessionRow({ session: s }: { session: SavedSession }) {
       </button>
       <div className="flex justify-end">
         <SessionDownloads session={s} />
+      </div>
+      </div>
       </div>
     </li>
   )

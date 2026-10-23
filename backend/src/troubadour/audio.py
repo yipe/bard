@@ -146,16 +146,26 @@ class FileSource:
         self.audio = load_audio(path, 0.0, end)
         self.speed = min(max(float(speed), self.MIN_SPEED), self.MAX_SPEED)
         self._stop = threading.Event()
+        self._paused = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self, sink: Sink, on_end: Callable[[], None]) -> None:
         def pump():
             t0 = time.monotonic()
+            held = 0.0
             for i, start in enumerate(range(0, len(self.audio) - FRAME + 1, FRAME)):
                 if self._stop.is_set():
                     return
-                # Pace against the wall clock so drift doesn't accumulate.
-                due = t0 + (i * FRAME / SR) / self.speed
+                if self._paused.is_set():
+                    t_hold = time.monotonic()
+                    while self._paused.is_set() and not self._stop.is_set():
+                        self._stop.wait(0.05)
+                    held += time.monotonic() - t_hold
+                    if self._stop.is_set():
+                        return
+                # Pace against the wall clock so drift doesn't accumulate. Time spent paused
+                # is added back, so resume continues from the same sample.
+                due = t0 + held + (i * FRAME / SR) / self.speed
                 delay = due - time.monotonic()
                 if delay > 0:
                     time.sleep(delay)
@@ -164,6 +174,12 @@ class FileSource:
 
         self._thread = threading.Thread(target=pump, name="file-source", daemon=True)
         self._thread.start()
+
+    def pause(self) -> None:
+        self._paused.set()
+
+    def resume(self) -> None:
+        self._paused.clear()
 
     def stop(self) -> None:
         self._stop.set()
@@ -180,6 +196,7 @@ class MicSource:
         self._stream = None
         self._lock = threading.Lock()
         self._stopped = False
+        self._paused = False
 
     def device_name(self) -> str | None:
         """The device's own name, even for "the default mic" (None if it can't be read)."""
@@ -232,6 +249,21 @@ class MicSource:
                 _close(stream)
                 return
             self._stream = stream
+            if not self._paused:
+                stream.start()
+
+    def pause(self) -> None:
+        with self._lock:
+            self._paused = True
+            stream = self._stream
+        if stream is not None:
+            stream.stop()
+
+    def resume(self) -> None:
+        with self._lock:
+            self._paused = False
+            stream = self._stream
+        if stream is not None:
             stream.start()
 
     def stop(self) -> None:

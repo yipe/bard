@@ -263,6 +263,12 @@ def state():
     return engine.snapshot()
 
 
+@app.post("/api/llm/recheck")
+def recheck_llm():
+    """Try the local LLM again right now. The session event carries the new status."""
+    return engine.recheck_llm()
+
+
 @app.get("/api/debug/memory")
 def debug_memory():
     return engine.memory_stats()
@@ -283,10 +289,20 @@ def current_transcript(fmt: Literal["md", "json"]):
     return _download(body, record["session"]["id"], fmt)
 
 
+class MergeIn(BaseModel):
+    ids: list[str] = Field(min_length=2, max_length=2)
+
+
 @app.get("/api/sessions")
 def sessions():
     """Saved sessions (autosaved every few seconds and when a session ends), newest first."""
     return engine.list_sessions()
+
+
+@app.post("/api/sessions/merge")
+def merge_sessions(body: MergeIn):
+    """Append the later of two saved sessions onto the earlier one. The later folder is removed."""
+    return _call(engine.merge_sessions, body.ids)
 
 
 def _require_open_campaign(sid: str) -> None:
@@ -312,7 +328,13 @@ def improve_transcript(sid: str):
     _call(session_audio, sid)
     with campaign_gate:
         _require_open_campaign(sid)
-        return memory.submit("improve", sid, lambda job: improve.run(job, engine, sid, lambda: memory.emit(job))).to_json()
+        return memory.submit(
+            "improve",
+            sid,
+            lambda job: improve.run(
+                job, engine, sid, lambda: memory.emit(job), model=config.WHISPER_IMPROVE_MODEL
+            ),
+        ).to_json()
 
 
 @app.post("/api/sessions/{sid}/spelling")
@@ -771,6 +793,16 @@ def voice_sample(vid: str):
 @app.post("/api/session/start")
 def start(body: StartIn):
     return _call(engine.start, body.source.model_dump())
+
+
+@app.post("/api/session/pause")
+def pause():
+    return engine.pause()
+
+
+@app.post("/api/session/resume")
+def resume():
+    return engine.resume()
 
 
 @app.post("/api/session/stop")

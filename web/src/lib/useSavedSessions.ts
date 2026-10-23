@@ -13,8 +13,9 @@ export interface SavedSessionsState {
  * The open campaign's saved sessions, newest first. Fetched on mount, again whenever a live
  * session finishes (running/stopping -> idle), since it was just saved, and on a campaign switch.
  */
-export function useSavedSessions(): SavedSessionsState {
+export function useSavedSessions(): SavedSessionsState & { reload: () => void } {
   const [state, setState] = useState<SavedSessionsState>({ sessions: null, error: null })
+  const [tick, setTick] = useState(0)
   useEffect(() => {
     let alive = true
     const load = () =>
@@ -32,6 +33,6 @@ export function useSavedSessions(): SavedSessionsState {
       alive = false
       unsubscribe()
     }
-  }, [])
-  return state
+  }, [tick])
+  return { ...state, reload: () => setTick((n) => n + 1) }
 }

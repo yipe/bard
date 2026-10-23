@@ -1,11 +1,14 @@
 import json
 
+import numpy as np
 import pytest
 from conftest import speak
 from fastapi.testclient import TestClient
 from test_engine import ALICE, BOB, named_voice, say
 
 from troubadour import config, server
+from troubadour.audio import wav_bytes
+from troubadour.engine import _audio_seconds
 from troubadour.transcript import build, clock, filler_only, markdown, without_fillers
 
 
@@ -215,6 +218,57 @@ def test_records_drop_filler_lines():
 
 def test_data_dir_is_isolated(dirs):
     assert str(config.DATA_DIR).startswith(str(dirs[0].parent))
+
+
+def _saved(engine, sid, started, text, seconds=1.0):
+    folder = engine.sessions_dir() / sid
+    folder.mkdir(parents=True)
+    record = {
+        "version": 1,
+        "session": {
+            "id": sid,
+            "started_at": started,
+            "source": {"kind": "mic", "device": None},
+            "duration_s": seconds,
+            "lines": 1,
+            "campaign": engine.campaign,
+        },
+        "players": [{"id": "p", "name": "Nora", "character": "", "is_gm": True, "color": "#fff"}],
+        "voices": [],
+        "messages": [{
+            "id": "m", "t_start": 0.0, "t_end": 0.5, "speaker": "Nora", "player_id": "p",
+            "character": None, "voice_id": None, "provisional": False, "confidence": 1,
+            "text": text, "fixes": [], "level_db": None,
+        }],
+    }
+    (folder / "transcript.json").write_text(json.dumps(record))
+    (folder / "meta.json").write_text(json.dumps(record["session"]))
+    (folder / "transcript.md").write_text("x")
+    (folder / "audio.wav").write_bytes(wav_bytes(np.zeros(int(16000 * seconds), np.float32)))
+    return folder
+
+
+def test_merge_appends_the_later_session(engine):
+    early = "2026-10-08_120000-aaaa"
+    late = "2026-10-08_120200-bbbb"
+    _saved(engine, early, 1_000, "First half.")
+    _saved(engine, late, 1_000 + 70, "Second half.")  # 70s after the first started; first is 1s
+    out = engine.merge_sessions([late, early])
+    assert out["id"] == early
+    assert not (engine.sessions_dir() / late).exists()
+    saved = json.loads((engine.sessions_dir() / early / "transcript.json").read_text())
+    assert [m["text"] for m in saved["messages"]] == ["First half.", "Second half."]
+    assert saved["messages"][1]["t_start"] == 1.0
+    assert saved["session"]["merged_from"] == [late]
+    assert _audio_seconds(engine.sessions_dir() / early / "audio.wav") == 2.0
+
+
+def test_merge_refuses_a_live_session(engine):
+    early = "2026-10-08_120000-aaaa"
+    _saved(engine, early, 1_000, "First half.")
+    engine.live = type("S", (), {"id": early})()
+    with pytest.raises(ValueError, match="live"):
+        engine.merge_sessions([early, "2026-10-08_120200-bbbb"])
 
 
 def test_record_keeps_player_colors_for_the_viewer():

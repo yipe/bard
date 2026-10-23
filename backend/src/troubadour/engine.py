@@ -23,6 +23,7 @@ import tempfile
 import threading
 import time
 import uuid
+import wave
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -82,6 +83,50 @@ CAMPAIGN_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")  # also Troubadour Cloud's rule
 
 def short_id(prefix: str) -> str:
     return f"{prefix}{uuid.uuid4().hex[:10]}"
+
+
+def _first_by_id(earlier: list[dict], later: list[dict]) -> list[dict]:
+    out: dict[str, dict] = {}
+    for item in earlier + later:
+        out.setdefault(item["id"], item)
+    return list(out.values())
+
+
+def _audio_seconds(path: Path) -> float:
+    with wave.open(str(path)) as w:
+        return w.getnframes() / w.getframerate()
+
+
+def _concat_wav(keep: Path, extra: Path) -> None:
+    """Append extra's samples onto keep. Same format is copied; otherwise ffmpeg matches keep."""
+    with wave.open(str(keep)) as a, wave.open(str(extra)) as b:
+        same = (a.getnchannels(), a.getsampwidth(), a.getframerate()) == (
+            b.getnchannels(),
+            b.getsampwidth(),
+            b.getframerate(),
+        )
+        spec = (a.getnchannels(), a.getsampwidth(), a.getframerate())
+        a_frames = a.readframes(a.getnframes()) if same else b""
+        b_frames = b.readframes(b.getnframes()) if same else b""
+    tmp = keep.with_name(".audio.wav.merging")
+    if same:
+        with wave.open(str(tmp), "wb") as dst:
+            dst.setnchannels(spec[0])
+            dst.setsampwidth(spec[1])
+            dst.setframerate(spec[2])
+            dst.writeframes(a_frames + b_frames)
+    else:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-nostdin", "-v", "error",
+                "-i", str(keep), "-i", str(extra),
+                "-filter_complex", "[0:a][1:a]concat=n=2:v=0:a=1",
+                "-ac", str(spec[0]), "-ar", str(spec[2]),
+                str(tmp),
+            ],
+            check=True,
+        )
+    tmp.replace(keep)
 
 
 def sample_path(name: str) -> Path:
@@ -342,6 +387,7 @@ class LiveSession:
         self.frames_q: queue.Queue = queue.Queue()
         self.utt_q: queue.Queue = queue.Queue()
         self.abandoned = False
+        self.paused = False  # source is held; the segmenter must not treat the silence as a dead mic
         self.awake: subprocess.Popen | None = None  # sleep assertion while listening
         self.recorder: Recorder | None = None  # mic sessions: audio.wav in the session folder
         self.meter: levels.LevelMeter | None = None  # live level + quality for the UI
@@ -687,6 +733,74 @@ class Engine:
                 s["replayable"] = False
             out.append(s)
         return sorted(out, key=lambda s: s.get("started_at", 0), reverse=True)
+
+    def merge_sessions(self, ids: list[str]) -> dict:
+        """Append one saved session onto an earlier one and delete the later folder.
+
+        The earlier session keeps its id and start time. The later session's lines are shifted
+        to follow it, and the two recordings are concatenated when both exist. A recording on
+        only one of them is refused: the merged audio would no longer match the transcript.
+        """
+        if len(ids) != 2 or len(set(ids)) != 2:
+            raise ValueError("Pick two different saved sessions.")
+        for sid in ids:
+            if not SESSION_ID.fullmatch(sid):
+                raise KeyError(sid)
+        with self.lock:
+            if self.live is not None and self.live.id in ids:
+                raise ValueError("Stop the live session before merging it.")
+            campaign = self.campaign
+        records = []
+        for sid in ids:
+            if self.session_campaign(sid) != campaign:
+                raise ValueError("That session belongs to another campaign; open it first.")
+            folder = self.sessions_dir() / sid
+            try:
+                record = json.loads((folder / "transcript.json").read_text())
+            except (OSError, json.JSONDecodeError) as e:
+                raise KeyError(sid) from e
+            records.append((folder, record))
+        records.sort(key=lambda item: item[1]["session"].get("started_at", 0))
+        (keep_dir, keep), (drop_dir, drop) = records
+        keep_audio, drop_audio = keep_dir / "audio.wav", drop_dir / "audio.wav"
+        if keep_audio.is_file() != drop_audio.is_file():
+            raise ValueError("Merge sessions that both have a recording, or neither does.")
+        offset = _audio_seconds(keep_audio) if keep_audio.is_file() else float(keep["session"].get("duration_s") or 0)
+        seen = {m["id"] for m in keep["messages"]}
+        shifted = []
+        for m in drop["messages"]:
+            mid = m["id"]
+            if mid in seen:
+                mid = f"{mid}-merged"
+            seen.add(mid)
+            shifted.append(m | {"id": mid, "t_start": m["t_start"] + offset, "t_end": m["t_end"] + offset})
+        messages = sorted(keep["messages"] + shifted, key=lambda m: m["t_start"])
+        # The earlier session wins when a player or voice id is in both.
+        players = _first_by_id(keep.get("players", []), drop.get("players", []))
+        voices = _first_by_id(keep.get("voices", []), drop.get("voices", []))
+        added = _audio_seconds(drop_audio) if drop_audio.is_file() else float(drop["session"].get("duration_s") or 0)
+        session = dict(keep["session"])
+        session["duration_s"] = round(offset + added, 1)
+        session["lines"] = len(messages)
+        merged_from = list(session.get("merged_from") or [])
+        merged_from.append(drop["session"]["id"])
+        session["merged_from"] = merged_from
+        record = keep | {"session": session, "players": players, "voices": voices, "messages": messages}
+        if keep_audio.is_file():
+            _concat_wav(keep_audio, drop_audio)
+        for name in ("quality.json", "transcript.orig.json"):
+            (keep_dir / name).unlink(missing_ok=True)
+        files = {
+            "transcript.json": json.dumps(record, ensure_ascii=False, indent=1),
+            "transcript.md": transcript.markdown(record),
+            "meta.json": json.dumps(session),
+        }
+        for name, body in files.items():
+            tmp = keep_dir / f".{name}.tmp"
+            tmp.write_text(body, encoding="utf-8")
+            tmp.replace(keep_dir / name)
+        shutil.rmtree(drop_dir)
+        return next(s for s in self.list_sessions() if s["id"] == keep["session"]["id"])
 
     def session_file(self, sid: str, fmt: str) -> Path:
         """A saved session's transcript.{md,json} or its own recording (fmt "wav")."""
@@ -1376,13 +1490,39 @@ class Engine:
             return
         src.tap = sess.recorder.write
 
-    def stop(self) -> dict:
-        """Stop listening; queued utterances still finish, then status goes idle."""
+    def pause(self) -> dict:
+        """Hold the mic or replay. The session, transcript, and recording stay open."""
         with self._start_lock, self.lock:
             sess = self.live
             if self.status != "running" or sess is None:
                 return self.session_json()
+            sess.paused = True
+            self.status = "paused"
+            sess.source.pause()
+            out = self.session_json()
+        self.bus.emit("session.updated", out)
+        return out
+
+    def resume(self) -> dict:
+        with self._start_lock, self.lock:
+            sess = self.live
+            if self.status != "paused" or sess is None:
+                return self.session_json()
+            sess.source.resume()
+            sess.paused = False
+            self.status = "running"
+            out = self.session_json()
+        self.bus.emit("session.updated", out)
+        return out
+
+    def stop(self) -> dict:
+        """Stop listening; queued utterances still finish, then status goes idle."""
+        with self._start_lock, self.lock:
+            sess = self.live
+            if self.status not in ("running", "paused") or sess is None:
+                return self.session_json()
             self.status = "stopping"
+            sess.paused = False
             sess.source.stop()
             sess.frames_q.put(STOP)
             out = self.session_json()
@@ -1447,6 +1587,9 @@ class Engine:
             except queue.Empty:
                 if sess.abandoned:
                     return
+                if sess.paused:
+                    last_frame = time.monotonic()
+                    continue
                 # A mic that stops delivering (unplugged, Bluetooth drop, device reset) would
                 # otherwise leave a silent "running" session. File replays are paced by us.
                 if sess.desc["kind"] == "mic" and not stalled and time.monotonic() - last_frame > MIC_STALL_S:
@@ -1898,6 +2041,16 @@ class Engine:
             self.llm_ok = ok
             self._emit_session()
 
+    def recheck_llm(self) -> dict:
+        """Probe LM Studio now, instead of waiting for the periodic health loop."""
+        try:
+            ok = self.cleanup_llm.healthy()
+        except Exception as e:
+            log.warning("llm health check failed: %s", e)
+            ok = False
+        self._set_llm_ok(ok)
+        return {"url": self.cleanup_llm.url, "model": self.cleanup_llm.model, "ok": self.llm_ok}
+
     def _llm_health_loop(self) -> None:
         while True:
             try:
@@ -1954,6 +2107,9 @@ class Engine:
             deadline = time.monotonic() + job.seconds * 3 + 5
             while not job.done.wait(0.25):
                 self._train_status(job, "recording")
+                if job.from_session and self.status == "paused":
+                    deadline += 0.25  # wall time spent paused is not "no audio arrived"
+                    continue
                 if job.from_session and self.status != "running":
                     raise RuntimeError("The session stopped before training finished.")
                 if time.monotonic() > deadline:

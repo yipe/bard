@@ -1,5 +1,6 @@
-import { act, render, screen } from "@testing-library/react"
-import { beforeEach, describe, expect, it } from "vitest"
+import { act, fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { api } from "@/lib/api"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { dateTime } from "@/lib/format"
 import { applyEvent, useStore } from "@/lib/store"
@@ -40,5 +41,25 @@ describe("SessionHeader", () => {
     expect(screen.getByLabelText("Whisper: ready")).toBeInTheDocument()
     act(() => show("error"))
     expect(screen.getByLabelText("Whisper: failed")).toBeInTheDocument()
+  })
+
+  it("retries the LLM when its status is clicked while unavailable", async () => {
+    vi.spyOn(api, "recheckLlm").mockImplementation(async () => {
+      const llm = { url: "http://llm", model: "m", ok: true }
+      applyEvent({ type: "session.updated", data: session({ llm }) })
+      return llm
+    })
+    applyEvent({
+      type: "session.updated",
+      data: session({ llm: { url: "http://llm", model: "m", ok: false } }),
+    })
+    render(
+      <TooltipProvider>
+        <SessionHeader />
+      </TooltipProvider>,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }))
+    expect(api.recheckLlm).toHaveBeenCalledOnce()
+    expect(await screen.findByLabelText("LLM: connected")).toBeInTheDocument()
   })
 })

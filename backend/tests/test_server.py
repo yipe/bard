@@ -38,6 +38,24 @@ def test_state_shape(client):
     assert {"status", "source", "t", "llm", "asr", "training", "error", "audio_monitor"} <= set(s["session"])
 
 
+def test_llm_recheck(client, monkeypatch):
+    calls = []
+
+    def healthy():
+        calls.append(1)
+        return True
+
+    monkeypatch.setattr(server.engine.cleanup_llm, "healthy", healthy)
+    server.engine.llm_ok = False
+    try:
+        body = client.post("/api/llm/recheck").json()
+        assert body["ok"] is True
+        assert calls == [1]
+        assert client.get("/api/state").json()["session"]["llm"]["ok"] is True
+    finally:
+        server.engine.llm_ok = False
+
+
 def test_audio_monitor_toggle(client):
     try:
         assert client.put("/api/audio/monitor", json={"on": False}).json() == {"on": False}

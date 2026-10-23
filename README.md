@@ -61,7 +61,8 @@ Environment variables (see `backend/src/troubadour/config.py`):
 | `TROUBADOUR_VAULT` | `$TROUBADOUR_DATA/campaign` | campaign wiki; point it at a folder in an existing Obsidian vault |
 | `TROUBADOUR_LLM_URL` / `TROUBADOUR_LLM_MODEL` | LM Studio, gemma | LLM for spelling cleanup |
 | `TROUBADOUR_MEMORY_MODEL` / `TROUBADOUR_MEMORY_REASONING` | same model / `none` | LLM for notes and write-ups |
-| `TROUBADOUR_WHISPER` | `mlx-community/whisper-large-v3-turbo` | Whisper model |
+| `TROUBADOUR_WHISPER` | `mlx-community/whisper-large-v3-turbo` | Whisper model for the live session |
+| `TROUBADOUR_WHISPER_IMPROVE` | `mlx-community/whisper-large-v3-mlx` | Whisper model for Improve transcript |
 | `TROUBADOUR_RECORD=0`, `TROUBADOUR_CLEANUP=0`, `TROUBADOUR_ASR_PROMPT=0` | on | turn off recording, spelling cleanup, name prompting |
 
 Troubadour was called Bard before. Setups from then keep working: a `BARD_*` variable is read when its

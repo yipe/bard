@@ -24,7 +24,8 @@ export default function App() {
   const view = useStore((s) => s.view)
   const connected = useStore((s) => s.connected)
   const loaded = useStore((s) => s.loaded)
-  const running = useStore((s) => s.session?.status === "running")
+  const sessionStatus = useStore((s) => s.session?.status)
+  const running = sessionStatus === "running" || sessionStatus === "paused"
   const serverError = useStore((s) => s.session?.error ?? null)
 
   useEffect(connect, [])

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { FileAudio, History, Mic, Square } from "lucide-react"
+import { FileAudio, History, Mic, Pause, Play, Square } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -48,9 +48,33 @@ export function SessionHeader() {
   const session = useStore((s) => s.session)
   const t = useSessionTime()
   const [stopping, setStopping] = useState(false)
+  const [hold, setHold] = useState(false)
+  const [recheckingLlm, setRecheckingLlm] = useState(false)
   if (!session) return null
   const { source, status, llm, asr } = session
   const whisper = ASR_STATUS[asr.state]
+
+  const recheckLlm = async () => {
+    setRecheckingLlm(true)
+    try {
+      await api.recheckLlm()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setRecheckingLlm(false)
+    }
+  }
+
+  const holdSession = async (resume: boolean) => {
+    setHold(true)
+    try {
+      await (resume ? api.resumeSession() : api.pauseSession())
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setHold(false)
+    }
+  }
 
   const stop = async () => {
     setStopping(true)
@@ -91,10 +115,19 @@ export function SessionHeader() {
       />
       <ServiceStatus
         name="LLM"
-        state={llm.ok ? "connected" : "unavailable"}
-        dot={llm.ok ? "bg-emerald-500" : "bg-red-500"}
-        detail={`${llm.ok ? "Connected" : "Unavailable"} · ${llm.model || "no model"} @ ${llm.url}`}
+        state={recheckingLlm ? "checking" : llm.ok ? "connected" : "unavailable"}
+        dot={recheckingLlm ? "animate-pulse bg-amber-500" : llm.ok ? "bg-emerald-500" : "bg-red-500"}
+        detail={
+          recheckingLlm
+            ? "Checking…"
+            : `${llm.ok ? "Connected" : "Unavailable"} · ${llm.model || "no model"} @ ${llm.url}`
+        }
       />
+      {!llm.ok && (
+        <Button size="xs" variant="outline" disabled={recheckingLlm} onClick={() => void recheckLlm()}>
+          {recheckingLlm ? "Checking…" : "Retry"}
+        </Button>
+      )}
       <div className="ml-auto flex items-center gap-2">
         <SessionAudio />
         <ExportLinks />
@@ -103,9 +136,22 @@ export function SessionHeader() {
             New session
           </Button>
         ) : (
-          <Button size="sm" variant="destructive" disabled={stopping || status === "stopping"} onClick={stop}>
-            <Square /> Stop
-          </Button>
+          <>
+            {status !== "stopping" && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={hold}
+                onClick={() => void holdSession(status === "paused")}
+              >
+                {status === "paused" ? <Play /> : <Pause />}
+                {status === "paused" ? "Resume" : "Pause"}
+              </Button>
+            )}
+            <Button size="sm" variant="destructive" disabled={stopping || status === "stopping"} onClick={stop}>
+              <Square /> Stop
+            </Button>
+          </>
         )}
       </div>
     </div>

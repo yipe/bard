@@ -1,6 +1,7 @@
 import asyncio
 import io
 import threading
+import time
 import wave
 
 import numpy as np
@@ -31,6 +32,31 @@ def test_wav_bytes_clips_out_of_range_samples():
 def test_file_source_speed_is_clamped(tmp_path, asked, clamped):
     src = FileSource(write_wav(tmp_path / "a.wav", tone(440, 0.2)), asked)
     assert src.speed == clamped
+
+
+def test_file_source_pause_holds_then_finishes(tmp_path):
+    src = FileSource(write_wav(tmp_path / "a.wav", tone(440, 0.5)), 4.0)
+    frames, done = [], threading.Event()
+    src.pause()
+    src.start(frames.append, done.set)
+    time.sleep(0.2)
+    assert frames == [] and not done.is_set()
+    src.resume()
+    assert done.wait(5)
+    assert frames
+
+
+def test_mic_pause_stops_the_stream_until_resume(fake_sounddevice):
+    mic = MicSource()
+    mic.start(lambda f: None, lambda: None)
+    stream = fake_sounddevice.instances[0]
+    assert stream.started
+    mic.pause()
+    assert not stream.started
+    mic.resume()
+    assert stream.started
+    mic.stop()
+    assert stream.closed
 
 
 def test_file_source_delivers_exact_frames_then_ends(tmp_path):

@@ -25,6 +25,9 @@ MEMORY_LLM_MODEL = env("MEMORY_MODEL", LLM_MODEL)
 MEMORY_REASONING = env("MEMORY_REASONING", "none")
 
 WHISPER_MODEL = env("WHISPER", "mlx-community/whisper-large-v3-turbo")
+# Re-listen (Improve transcript) only. Full large-v3, not the live turbo model.
+# TROUBADOUR_WHISPER_IMPROVE=mlx-community/whisper-large-v3-turbo keeps both passes the same.
+WHISPER_IMPROVE_MODEL = env("WHISPER_IMPROVE", "mlx-community/whisper-large-v3-mlx")
 # Prompt Whisper with the campaign's names and the last few lines (measured on a real 2.6 h
 # session: word errors 12.9% → 11.0%, names spelled right 31% → 86%, same speed). TROUBADOUR_ASR_PROMPT=0: off.
 ASR_PROMPT = env("ASR_PROMPT", "1") != "0"

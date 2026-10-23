@@ -57,9 +57,16 @@ class RecordingBus(Bus):
 class NullSource:
     def __init__(self):
         self.stopped = False
+        self.paused = False
 
     def start(self, sink, on_end):
         pass
+
+    def pause(self):
+        self.paused = True
+
+    def resume(self):
+        self.paused = False
 
     def stop(self):
         self.stopped = True

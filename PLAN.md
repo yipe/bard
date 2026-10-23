@@ -68,7 +68,7 @@ information arrives.
 | # | Stage | Tech | Target latency |
 |---|---|---|---|
 | 1 | Capture + VAD | `sounddevice` at the mic's rate → 16 kHz mono, Silero VAD → utterances (`troubadour/segment.py`: 400 ms silence ends a line, 200 ms padding, 12 s cap) | — |
-| 2 | Speaker ID | `VoiceMatcher` (`troubadour/voices.py`): embed each utterance (padded to ≥ 1.5 s), nearest known voiceprint; best score < 0.40 → unknown, grouped into a pending "Voice N"; confident ≥ 3 s matches adapt the voiceprint | 0.5–1 s |
+| 2 | Speaker ID | `VoiceMatcher` (`troubadour/voices.py`): embed each utterance (padded to ≥ 1.5 s), nearest known voiceprint; best score < 0.30 → unknown, grouped into a pending "Voice N"; confident ≥ 3 s matches adapt the voiceprint | 0.5–1 s |
 | 3 | ASR | `mlx-whisper` large-v3-turbo; prompt: the table's names, glossary names said lately, the rest of the glossary (≤ 20 names) and the last lines, fitted to Whisper's 223-token prompt window; glossary fix-up of names afterwards | 1.5–4 s |
 | 4 | Refine | re-score past utterances against current (matured) voiceprints and relabel; later also re-run ASR over larger windows. pyannote is *not* used for identity (benchmark: it lowers accuracy) | background |
 
@@ -113,7 +113,7 @@ separate character voiceprint plus a style model (WavLM; `spike/style.py`).
 On a real normal/character pair the speaker embedding got 65%, WavLM 80% on
 held-out 1–2 s windows, and live it still couldn't tell them apart, so it was
 removed. Instead, a character voice that is really distinct to the speaker
-model scores below 0.40 against the player's normal voiceprint, surfaces as
+model scores below 0.30 against the player's normal voiceprint, surfaces as
 its own "Voice N", and gets named with a character in the panel. Among one
 player's voiceprints a line only switches if one wins by `CHARACTER_MARGIN`
 (0.08), so near-identical ones don't flicker. Once a player has a character
@@ -598,7 +598,7 @@ Findings:
 - Option B ≈ trained once the refine pass relabels history. Live labels lag
   (~76% CR) until voices mature, so show low-confidence labels as provisional.
   Remaining gap is quiet players who never reach the panel: Train fixes that.
-- Unknown voices (leave-one-out, segments ≥ 1.5 s): best score < 0.40 flags
+- Unknown voices (leave-one-out, segments ≥ 1.5 s): best score < 0.30 flags
   96.7% of unenrolled speakers, wrongly flags 4.3% of enrolled ones.
 - Whisper prompt with names: no measurable gain on WER, numbers, or names.
   large-v3: ~3× slower, no better. Turbo, no prompt.

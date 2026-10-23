@@ -143,7 +143,7 @@ def transcribe(audio: np.ndarray, prompt: str | None = None, model: str | None =
     """One utterance. A prompt (glossary names) helps names, but on a quiet clip Whisper can read
     it back as speech, fall into a loop or invent a sentence; such a result is redone without the
     prompt, and a line still spoken impossibly fast is dropped.
-    model: another Whisper (e.g. large-v3 for an offline pass); default the live one."""
+    model: another Whisper (e.g. large-v3-mlx for an offline pass); default the live one."""
     text = _run(audio, prompt, model)
     if prompt and text and (suspicious(text, prompt) or too_fast(text, audio)):
         text = _run(audio, None, model)

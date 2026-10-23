@@ -55,7 +55,7 @@ export type Source =
   | { kind: "file"; name: string; speed: number }
   | { kind: "session"; id: string /* saved session being replayed */; speed: number }
 export interface Session {
-  status: "idle" | "running" | "stopping"
+  status: "idle" | "running" | "paused" | "stopping"
   source: Source | null
   t: number /* session seconds at send time */
   llm: { url: string; model: string; ok: boolean }
@@ -79,6 +79,8 @@ export interface SavedSession {
   restorable: boolean /* improved; the original transcript can be restored */
   /** The recording's verdict, once measured (GET /api/sessions/{id}/quality); null = not yet. */
   quality: QualityVerdict | null
+  /** Ids of later sessions already appended onto this one. */
+  merged_from?: string[]
 }
 /** Set on a saved record once "Improve transcript" re-transcribed it. */
 export interface ImprovedInfo {

@@ -67,7 +67,7 @@ class VoiceMatcher:
         adapt_weight: float = 5.0,
         adapt_min_s: float = 3.0,
         adapt_margin: float = 0.1,
-        unknown_below: float = 0.40,
+        unknown_below: float = 0.30,
     ):
         self.embedder = embedder
         self.pad_to = pad_to
