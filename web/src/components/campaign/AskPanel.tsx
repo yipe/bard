@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/api"
 import { attempt, campaignActions, useCampaign } from "@/lib/campaignStore"
 import { openSessionById } from "@/lib/route"
+import { cn } from "@/lib/utils"
 import type { AnswerSource, CampaignAnswer } from "@/lib/types"
 import { FactText } from "./FactText"
 import { ObsidianLink } from "./ObsidianLink"
@@ -16,18 +17,12 @@ const PROGRESS: Partial<Record<CampaignAnswer["state"], string>> = {
   thinking: "Reading what it found…",
 }
 
-/** Full tab: the question box and previous answers fill the page under the tab bar. */
+/** Full tab: earlier questions on the left, the open question on the right. */
 export function AskView() {
   useEffect(() => {
     void campaignActions.refresh()
   }, [])
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-6">
-      <div className="mx-auto w-full max-w-2xl">
-        <AskPanel />
-      </div>
-    </div>
-  )
+  return <AskPanel />
 }
 
 /** Ask the local LLM about the campaign; it answers from transcripts and notes, citing them. */
@@ -35,6 +30,7 @@ export function AskPanel() {
   const answers = useCampaign((s) => s.answers)
   const [question, setQuestion] = useState("")
   const [sending, setSending] = useState(false)
+  const [selected, setSelected] = useState<string | null>(null)
 
   async function submit(q: string) {
     if (!q.trim() || sending) return
@@ -43,54 +39,84 @@ export function AskPanel() {
     setSending(false)
     if (a) {
       campaignActions.putAnswer(a)
+      setSelected(a.id)
       setQuestion("")
     }
   }
 
   const newestFirst = Object.values(answers).sort((a, b) => b.created - a.created)
+  const current = newestFirst.find((a) => a.id === selected) ?? newestFirst[0]
 
   return (
-    <section className="space-y-4" aria-label="Ask about the campaign">
-      <form
-        className="space-y-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void submit(question)
-        }}
-      >
-        <label htmlFor="ask-question" className="flex items-center gap-2 text-sm font-semibold">
-          <MessageCircleQuestion className="size-4" /> Ask about the campaign
-        </label>
-        <div className="flex items-end gap-2">
-          <Textarea
-            id="ask-question"
-            rows={2}
-            maxLength={500}
-            value={question}
-            placeholder="Who did we suspect has the diamond?"
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault()
-                void submit(question)
-              }
-            }}
-          />
-          <Button type="submit" disabled={!question.trim() || sending}>
-            <Send /> Ask
-          </Button>
+    <div className="flex min-h-0 flex-1">
+      <aside className="flex w-80 shrink-0 flex-col border-r" aria-label="Earlier questions">
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {newestFirst.length === 0 ? (
+            <p className="px-2 py-1.5 text-sm text-muted-foreground">No questions yet.</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {newestFirst.map((a) => (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(a.id)}
+                    className={cn(
+                      "w-full truncate rounded-lg px-2 py-1.5 text-left text-sm",
+                      current?.id === a.id ? "bg-muted font-medium" : "hover:bg-muted/60",
+                    )}
+                  >
+                    {a.question}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          The local model reads your saved transcripts and notes and answers from them.
-        </p>
-      </form>
+      </aside>
+      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <section className="mx-auto w-full max-w-2xl space-y-4" aria-label="Ask about the campaign">
+          <form
+            className="space-y-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void submit(question)
+            }}
+          >
+            <label htmlFor="ask-question" className="flex items-center gap-2 text-sm font-semibold">
+              <MessageCircleQuestion className="size-4" /> Ask about the campaign
+            </label>
+            <div className="flex items-end gap-2">
+              <Textarea
+                id="ask-question"
+                rows={2}
+                maxLength={500}
+                value={question}
+                placeholder="Who did we suspect has the diamond?"
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    void submit(question)
+                  }
+                }}
+              />
+              <Button type="submit" disabled={!question.trim() || sending}>
+                <Send /> Ask
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The local model reads your saved transcripts and notes and answers from them.
+            </p>
+          </form>
 
-      <ul className="space-y-3">
-        {newestFirst.map((a) => (
-          <AnswerCard key={a.id} answer={a} onRetry={() => void submit(a.question)} />
-        ))}
-      </ul>
-    </section>
+          {current && (
+            <ul className="space-y-3">
+              <AnswerCard key={current.id} answer={current} onRetry={() => void submit(current.question)} />
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
   )
 }
 

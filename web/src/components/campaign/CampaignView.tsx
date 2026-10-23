@@ -74,8 +74,8 @@ export function CampaignView() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside className="space-y-4 overflow-y-auto border-b p-4 lg:w-96 lg:border-r lg:border-b-0">
+      <div className="flex min-h-0 flex-1">
+        <aside className="w-80 shrink-0 space-y-4 overflow-y-auto border-r p-4">
           <SuggestionsCard />
           <GlossaryList entities={campaign.entities} types={campaign.types} />
           <CampaignFacts facts={campaign.facts} />
