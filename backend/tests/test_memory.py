@@ -205,7 +205,7 @@ def test_write_up_makes_a_session_page_and_suggestions(setup):
     page = (vault.root / "Sessions" / "2026-10-08 The Desert Road.md").read_text()
     assert f"session_id: {sid}" in page
     assert "[[Elara]] led the way." in page
-    assert "- [[Elara]] rolled initiative." in page
+    assert "rolled initiative" not in page  # a check is not the session
     assert "- The party found a cave near [[Dallon]]." in page
     assert "assassinate" not in page  # a joke is not the session
     assert f"[[Transcripts/{sid}|Full transcript]]" in page
@@ -229,8 +229,13 @@ def test_what_happened_caps_beats_per_part_with_room_for_the_ending(setup, monke
     wait(make(llm).write_up(sid))
     parts = sum("Transcript:\n" in c for c in llm.calls)
     assert parts > 1
-    happened = _what_happened(vault)  # empty claims dropped; each part is capped
-    assert len(happened) == mem.PART_CLAIMS * (parts - 1) + mem.FINAL_PART_CLAIMS
+    happened = _what_happened(vault)  # the page is a short note, not every claim
+    assert len(happened) == mem.NOTE_MAX
+    note = llm.calls[-1]
+    returned = 19  # blank claim dropped; Beat 1..19
+    assert sum(line.startswith("- ") for line in note.splitlines()) == (
+        min(returned, mem.PART_CLAIMS) * (parts - 1) + min(returned, mem.FINAL_PART_CLAIMS)
+    )
     assert "rolled initiative" in mem.WRITEUP_SYSTEM  # the prompt shows what not to write
 
 
@@ -298,6 +303,48 @@ def test_write_up_unknown_session(setup):
 
 
 # ------------------------------------------------------------- helpers
+
+
+def test_the_page_is_the_recap_not_the_claim_list(setup):
+    vault, sessions, make = setup
+    sid = _session(sessions)
+    claims = [
+        {"text": "The party rolled initiative.", "status": "happened"},
+        {"text": "Sathrin attacked the worm, dealing 8 damage.", "status": "happened"},
+        {"text": "Elara found a dead autognome beside the wagon.", "status": "happened"},
+        {"text": "Sathrin plans to travel north tomorrow.", "status": "open"},
+        {"text": "The letter to Lumberg is still undelivered.", "status": "open"},
+    ]
+    note = {
+        "title": "The Desert Road",
+        "summary": "Elara found a dead autognome beside the wagon.",
+        "scenes": [
+            "Elara found a dead autognome beside the wagon.",
+            "A mephit animated a dune of bone cactus.",  # not in the claims
+        ],
+        "open": ["Sathrin plans to travel north tomorrow.", "The letter to Lumberg is still undelivered."],
+        "highlights": [
+            "Elara found a dead autognome beside the wagon.",
+            "Sathrin attacked the worm, dealing 8 damage.",
+        ],
+    }
+    wait(make(FakeLLM(writeups=[{"claims": claims}], summary=note)).write_up(sid))
+    assert _what_happened(vault) == ["- [[Elara]] found a dead autognome beside the wagon."]
+    assert _still_open(vault) == ["- The letter to Lumberg is still undelivered."]
+    page = (vault.root / "Sessions" / "2026-10-08 The Desert Road.md").read_text()
+    assert "initiative" not in page
+    assert "8 damage" not in page
+    assert "bone cactus" not in page
+    assert "plans to travel" not in page
+    assert page.split("## Highlights\n", 1)[1].split("\n\n", 1)[0] == (
+        "- [[Elara]] found a dead autognome beside the wagon."
+    )
+
+
+def test_an_everyday_alias_does_not_eat_the_word(tmp_path):
+    vault = Vault(tmp_path)
+    vault.create("Hank", "npc", aliases=["Dead"])
+    assert mem.link_names("They found a dead lizardfolk.", vault) == "They found a dead lizardfolk."
 
 
 def test_link_names_links_once_and_uses_aliases(tmp_path):

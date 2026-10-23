@@ -2,12 +2,11 @@
 
 - import_notes: pasted session notes → Notes/<title>.md (verbatim) + entities and facts.
   The notes are the user's own, so what they name is added as confirmed.
-- write_up: a saved session's transcript → Sessions/<date> <title>.md. Each chunk is read as
-  claims (what happened, a joke, a correction, a retraction, or still open). Jokes and
-  retracted claims never reach the page; a correction replaces the claim it fixes. The
-  summary and "What happened" are written only from what remains, plus *suggested* facts,
-  entities and heard-as spellings for review in the Campaign tab. The transcript is copied
-  to Sessions/Transcripts/.
+- write_up: a saved session's transcript → Sessions/<date> <title>.md. Each chunk becomes a
+  plain log (what happened, an aside, a correction, a retraction, or still open). Asides and
+  retracted lines never reach the note. A second pass writes the paragraph and the scenes
+  from that log only, plus *suggested* facts, entities and heard-as spellings for review in
+  the Campaign tab. The transcript is copied to Sessions/Transcripts/.
 - spelling_suggestions: no LLM; transcript words that look like misspellings of a glossary
   name ("Dilara" for Elara), and frequent unknown names worth adding.
 
@@ -39,7 +38,8 @@ log = logging.getLogger("troubadour")
 CHUNK_CHARS = 6000  # notes per extraction call; small enough for a fast, careful answer
 # Per transcript part, whatever the model returns. The last part gets more room so the ending
 # and anything still unresolved can land as their own claims.
-PART_FACTS, PART_NAMES, PART_CLAIMS, FINAL_PART_CLAIMS = 5, 8, 8, 16
+PART_FACTS, PART_NAMES, PART_CLAIMS, FINAL_PART_CLAIMS = 5, 8, 12, 20
+NOTE_MAX = 12  # scenes on the session page; the claim list is notes for that pass, not the page
 MAX_SUGGESTED_FACTS = 30  # per write-up: more than anyone will review
 # Facts about a passing state, not a lasting truth ("Magenta has one hit point").
 FLEETING = re.compile(
@@ -50,6 +50,7 @@ MAX_ITEMS = 40
 NAME_MAX, TEXT_MAX = 80, 300
 CLAIM_TEXT_MAX = 600  # one settled scene; 300 cut a finale off mid-sentence
 CLAIM_STATUS = {"happened", "open", "joke", "retracted", "corrected"}
+_KIND = {"did": "happened", "aside": "joke", "happened": "happened", "joke": "joke", "open": "open", "retracted": "retracted", "corrected": "corrected"}
 
 
 # ------------------------------------------------------------------ LLM
@@ -136,9 +137,9 @@ Answer with JSON only."""
 
 WRITEUP_SCHEMA = _obj(
     {
-        "claims": {
+        "log": {
             "type": "array",
-            "items": _obj({"at": STR, "text": STR, "status": {"type": "string"}, "fixes": STR}),
+            "items": _obj({"text": STR, "kind": {"type": "string"}, "fixes": STR}),
         },
         "facts": {"type": "array", "items": _obj({"about": STR, "text": STR})},
         "new_names": {"type": "array", "items": _obj({"name": STR, "type": KIND, "description": STR})},
@@ -146,33 +147,26 @@ WRITEUP_SCHEMA = _obj(
     }
 )
 
-WRITEUP_SYSTEM = """You keep the campaign log for a Dungeons & Dragons group. You get part of a session's
-speech-to-text transcript (it has errors, especially in names; each line starts with its time) and the
-campaign glossary.
-claims: what this part asserts about the game, in order, one sentence each. Spell names as the glossary
-does. status is one of:
-- happened: the table settled it (the GM narrated it, or a player stated it and nobody took it back).
-- open: it is still unresolved at the end of this part (a letter not delivered, a rest not taken, a
-  question the table left hanging).
-- joke: a player joked, planned, speculated, or talked about real life. Not the game.
-- retracted: the table took an earlier claim back (a death that didn't stick, a guess the GM corrected).
-  fixes = a short quote copied from that earlier claim. Do not restate the false version as fact.
-- corrected: the settled truth that replaces an earlier claim. fixes = a short quote from the claim it
-  replaces. text is the truth, and it says what was wrong when that matters ("Magenta slumped to about
-  one hit point; she did not die.").
-Most important: revelations, twists and threats, said plainly ("Kessia realized the water had been
-poisoned.", not "noticed it smelled strange"). Then outcomes: what the party gained or lost (a title,
-allies, enemies, a gift or item (name it), a reward, a promise, a debt), said specifically ("The kobolds
-made Thoronn their king, swore to be the party's allies and gave him a ceremonial sword.", not "thanked
-the party"). Then discoveries, decisions, who they met, a deal, a betrayal, a death, or a fight as what
-it meant and how it ended. One scene or one fight is one claim. Never play-by-play: no single attacks,
-hits or misses, rolls, initiative, damage, movement, positioning, or a spell list.
-Bad: "Oola's attack failed." "Phishondra moved 30 feet." "The party rolled initiative."
-Good: "Skeletons wrapped in fire ambushed the party; they fought them off in the fog, and Thoronn's
-Moonbeam finished the last one."
-Plain past tense, like a player recapping last session for a friend: specific, not dramatic (no
-"terrifying", "harrowing", "grotesque"). at = the time of the line where it starts, copied exactly.
-fixes is "" except on retracted and corrected.
+WRITEUP_SYSTEM = """You turn a piece of a Dungeons & Dragons session's speech-to-text transcript into a
+plain log. You also get the campaign glossary. The transcript mishears names; spell them as the glossary
+does. Do not decide what was important. Do not write a story. Write what a careful note-taker would, in
+order, one sentence per thing that happened.
+log: each line has text, kind, and fixes.
+kind is one of:
+- did: the table settled it. The GM narrated it, or a player did it and nobody took it back. A fight is
+  one line: who it was against and how it ended, not the rolls. "The party rolled initiative" is not a
+  log line. Neither is a single attack, a hit or miss, damage, a saving throw, or a spell list.
+- open: still unresolved (a letter not delivered, a question left hanging). Not a plan and not a guess.
+- aside: a joke, real-life talk, rules chatter, a guess, or "someone could do X" when they did not.
+- retracted: the table took an earlier line back. fixes = a short quote from that line. Do not restate
+  the false version.
+- corrected: the settled truth that replaces an earlier line. fixes = a short quote from the line it
+  replaces. Say what was wrong when that matters ("Magenta was at about one hit point; she did not die.").
+Do not merge two different things because they share a word. A body, an arm, or a creature the party
+found is not a person who has been traveling with them. If you are not sure they are the same, write
+them as separate lines. "Can repair" or "offered to" is an aside, not a did, unless the transcript shows
+they did it.
+fixes is "" except on retracted and corrected. Never invent anything that is not in the transcript.
 facts: up to 5 lasting things learned about someone or something, that will still be true next session,
 each a full sentence naming its subject ("Magenta is afraid of heights."); about = that name as the
 glossary spells it, or as the transcript does if it's new. Never passing states (hit points, where
@@ -186,22 +180,33 @@ usually what the GM narrates or confirms ("They assassinate her." as a joke is n
 Never invent anything that isn't in the transcript. Answer with JSON only."""
 
 SESSION_END = (
-    "This part is the end of the session. Include how it ended as a happened claim, each thing the party "
-    "came away with as its own happened claim (a title, an alliance, a named gift, a promise), and anything "
-    "still unresolved as open."
+    "This part is the end of the session. The last did lines should say where they stopped and what they "
+    "came away with. Anything still unresolved is open, not a plan."
 )
 
-SUMMARY_SCHEMA = _obj({"title": STR, "summary": STR, "highlights": STRS})
+NOTE_SCHEMA = _obj(
+    {
+        "title": STR,
+        "summary": STR,
+        "scenes": STRS,
+        "open": STRS,
+        "highlights": STRS,
+    }
+)
 
-SUMMARY_SYSTEM = """You write the session page of a Dungeons & Dragons campaign log from claims the table
-settled. You are given two lists: what happened, and what is still open. title: 2-5 words naming the
-session (no date). summary: one paragraph, at most 120 words, past tense, plain and matter-of-fact (no
-flourishes). Say what changed, name what the party came away with, and end where the session ended. If
-something was corrected, state the truth, not the version that was taken back.
-highlights: the 3-8 moments the players will want to remember: revelations and twists first, then outcomes
-(titles, alliances, enemies, named gifts), big decisions, and the finale if it changed something. Not
-routine fights, travel or shopping. Do not highlight an open question as if it were settled.
-Use only what the lists say. Answer with JSON only."""
+NOTE_SYSTEM = """You write the session note a Dungeons & Dragons player would tell a friend who missed the game.
+You get a log of what the table settled, already in order, and a short list of what is still open. You do
+not have the transcript. If the log does not say it, it did not happen.
+
+scenes: 4 to 10 sentences, in order. One scene or one fight is one sentence: what changed and how it
+ended. Keep two log lines separate when they are about different things, even if they share a name. A
+found body or a found object is not a person who was already with the party. Leave out travel that
+changed nothing, and leave out a detail that only explains how they reached the thing that mattered.
+open: copy only the unresolved items. Not a plan, not a guess, not something the log already says was done.
+highlights: 3 to 6 sentences copied from scenes, the ones the players will retell. Not the scenery.
+summary: one paragraph, at most 120 words, past tense, plain, using only the scenes. End where the log ends.
+title: 2-5 words, no date.
+Answer with JSON only."""
 
 
 # ------------------------------------------------------------------ validation
@@ -209,6 +214,42 @@ Use only what the lists say. Answer with JSON only."""
 
 def _text(value, limit: int = TEXT_MAX) -> str:
     return re.sub(r"\s+", " ", value).strip()[:limit] if isinstance(value, str) else ""
+
+
+# Rules talk and single actions. A prompt asks the model to skip these; it often does not.
+_PLAY = re.compile(
+    r"\b("
+    r"initiatives?|saving throws?|bonus actions?|spell slots?|"
+    r"attacks?|attacked|dealing \d+|\d+ damage|"
+    r"casts?|cast|"
+    r"(?:fails?|succeeds?|succeeded|failed) (?:a |an |on |another )?(?:\w+ ){0,2}(?:saving throw|check|save)|"
+    r"rolls? (?:a |an )?(?:dexterity|strength|constitution|intelligence|wisdom|charisma)"
+    r")\b",
+    re.I,
+)
+_NOT_OPEN = re.compile(r"\b(plans to|wants to|is going to|hopes to|might|maybe|possibly|could be)\b", re.I)
+_CONTENT = re.compile(r"[A-Za-z][A-Za-z'-]{3,}")
+_STOP = frozenset(
+    "that this with from they them their there then than were been have into over after before about "
+    "session party still just only when what your into onto also back".split()
+)
+
+
+def _play_by_play(text: str) -> bool:
+    return bool(_PLAY.search(text)) or bool(re.search(r"\bis present\b", text, re.I))
+
+
+def _words(text: str) -> set[str]:
+    return {w.casefold() for w in _CONTENT.findall(text) if w.casefold() not in _STOP}
+
+
+def _grounded(text: str, source: str) -> bool:
+    """A sentence earns its place when its content words actually occur in the claims it came from."""
+    words = _words(text)
+    if not words:
+        return False
+    have = _words(source)
+    return len(words & have) >= min(2, len(words))
 
 
 def _touches(fixes: str, text: str) -> bool:
@@ -225,12 +266,14 @@ def _settle(claims: list[dict]) -> tuple[list[str], list[str]]:
     happened: list[str] = []
     open_: list[str] = []
     for claim in claims:
-        status = claim.get("status")
+        status = _KIND.get(claim.get("kind") or claim.get("status"))
         text = _text(claim.get("text"), CLAIM_TEXT_MAX)
         if status not in CLAIM_STATUS or not text:
             continue
         fixes = claim.get("fixes") if isinstance(claim.get("fixes"), str) else ""
-        if status == "joke":
+        if status == "joke" or _play_by_play(text):
+            continue
+        if status == "open" and _NOT_OPEN.search(text):
             continue
         if status == "retracted":
             for i in range(len(happened) - 1, -1, -1):
@@ -248,6 +291,44 @@ def _settle(claims: list[dict]) -> tuple[list[str], list[str]]:
             continue
         (open_ if status == "open" else happened).append(text)
     return happened, open_
+
+
+def _lines(value, limit: int = NOTE_MAX) -> list[str]:
+    out = []
+    for item in value if isinstance(value, list) else []:
+        if isinstance(item, str) and (text := _text(item, CLAIM_TEXT_MAX)):
+            out.append(text)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _note(value: dict, happened: list[str], open_: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Scenes, still-open, highlights for the page.
+
+    A scene that does not use the claims' own words is dropped. A highlight that is not one of the
+    scenes is dropped. If the model returns nothing usable, the page gets the claims themselves,
+    capped, never the unfiltered list.
+    """
+    source = "\n".join([*happened, *open_])
+    scenes = [s for s in _lines(value.get("scenes") if isinstance(value, dict) else None) if _grounded(s, source)]
+    if not scenes:
+        scenes = happened[:NOTE_MAX]
+    scene_blob = "\n".join(scenes)
+    highlights = [
+        h
+        for h in _lines(value.get("highlights") if isinstance(value, dict) else None, 6)
+        if _grounded(h, scene_blob) and not _play_by_play(h)
+    ]
+    open_source = "\n".join(open_)
+    still = [
+        s
+        for s in _lines(value.get("open") if isinstance(value, dict) else None, 8)
+        if open_source and _grounded(s, open_source) and not _NOT_OPEN.search(s)
+    ]
+    if isinstance(value, dict) and value.get("open") is None and not still:
+        still = open_[:8]
+    return scenes, still or (open_[:8] if not (isinstance(value, dict) and "open" in value) else still), highlights
 
 
 _SMALL = {"of", "the", "and", "de", "du", "da", "von", "van", "a", "an", "in", "on", "to"}
@@ -503,9 +584,8 @@ class Memory:
             if last:
                 prompt += f"{SESSION_END}\n\n"
             out = self.llm.json(WRITEUP_SYSTEM, prompt + f"Transcript:\n{part}", WRITEUP_SCHEMA)
-            part_claims = [
-                c for c in out.get("claims") or [] if isinstance(c, dict) and _text(c.get("text"), CLAIM_TEXT_MAX)
-            ]
+            raw = out.get("log") or out.get("claims") or []
+            part_claims = [c for c in raw if isinstance(c, dict) and _text(c.get("text"), CLAIM_TEXT_MAX)]
             claims += part_claims[: FINAL_PART_CLAIMS if last else PART_CLAIMS]
             part_facts = [
                 (about, text)
@@ -531,7 +611,8 @@ class Memory:
         settled = "\n".join(f"- {e}" for e in happened) or "- (nothing happened)"
         if open_:
             settled += "\n\nStill open:\n" + "\n".join(f"- {e}" for e in open_)
-        summary = self.llm.json(SUMMARY_SYSTEM, settled, SUMMARY_SCHEMA)
+        summary = self.llm.json(NOTE_SYSTEM, settled, NOTE_SCHEMA)
+        scenes, open_, highlights = _note(summary, happened, open_)
         title = _text(summary.get("title"), 60) or "Session"
         date = time.strftime("%Y-%m-%d", time.localtime(s["started_at"]))
         sid = s["id"]
@@ -587,11 +668,9 @@ class Memory:
             self.vault.update(e.name, heard_as_suggested=[*e.heard_as_suggested, heard])
             job.suggested += 1
 
-        linked = [link_names(t, self.vault) for t in happened]
+        linked = [link_names(t, self.vault) for t in scenes]
         open_linked = [link_names(t, self.vault) for t in open_]
-        highlights = [
-            link_names(h, self.vault) for h in (_text(x) for x in summary.get("highlights") or [] if isinstance(x, str)) if h
-        ]
+        highlights = [link_names(h, self.vault) for h in highlights]
         mentioned = sorted(
             {e.name for e in self.vault.entities() if any(f"[[{e.name}]]" in x for x in [*linked, *open_linked, *highlights])}
         )
@@ -658,6 +737,9 @@ def link_names(text: str, vault: Vault, entities: list[Entity] | None = None) ->
             continue  # already linked once
         hits = []
         for n in e.names():
+            # An alias that is an ordinary word ("Dead" for Hank) must not eat that word in a sentence.
+            if n.casefold() != e.name.casefold() and everyday(n):
+                continue
             if m := re.search(rf"(?<![\[\w|]){re.escape(n)}(?![\w\]|])", text, re.I):
                 hits.append(m)
         if not hits:
