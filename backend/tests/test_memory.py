@@ -15,8 +15,8 @@ from troubadour.transcript import build
 class FakeLLM:
     """Answers by prompt type, in order; records every call."""
 
-    def __init__(self, notes=(), writeups=(), summary=None, story=None):
-        self.notes, self.writeups, self.story = list(notes), list(writeups), story
+    def __init__(self, notes=(), writeups=(), summary=None):
+        self.notes, self.writeups = list(notes), list(writeups)
         self.summary = summary or {
             "title": "The Desert Road",
             "summary": "Elara led the way.",
@@ -30,8 +30,6 @@ class FakeLLM:
             return self.notes.pop(0) if self.notes else {}
         if system is mem.WRITEUP_SYSTEM:
             return self.writeups.pop(0) if self.writeups else {}
-        if system is mem.STORY_SYSTEM:
-            return {"story": self.story} if self.story is not None else {}
         return self.summary
 
 
@@ -183,9 +181,10 @@ def test_write_up_makes_a_session_page_and_suggestions(setup):
     llm = FakeLLM(
         writeups=[
             {
-                "events": [
-                    {"at": "00:00", "text": "Elara rolled initiative."},
-                    {"at": "99:99", "text": "The party found a cave near Dallon."},
+                "claims": [
+                    {"at": "00:00", "text": "Elara rolled initiative.", "status": "happened", "fixes": ""},
+                    {"at": "99:99", "text": "The party found a cave near Dallon.", "status": "happened", "fixes": ""},
+                    {"at": "00:05", "text": "They assassinate her.", "status": "joke", "fixes": ""},
                 ],
                 "facts": [{"about": "Magenta", "text": "Waved at the party from the road."}, {"about": "Nobody", "text": "x"}],
                 "new_names": [
@@ -206,8 +205,9 @@ def test_write_up_makes_a_session_page_and_suggestions(setup):
     page = (vault.root / "Sessions" / "2026-10-08 The Desert Road.md").read_text()
     assert f"session_id: {sid}" in page
     assert "[[Elara]] led the way." in page
-    assert "- 00:00 [[Elara]] rolled initiative." in page
-    assert "- 00:00 The party found a cave near [[Dallon]]." in page  # "99:99" isn't a time in the transcript
+    assert "- [[Elara]] rolled initiative." in page
+    assert "- The party found a cave near [[Dallon]]." in page
+    assert "assassinate" not in page  # a joke is not the session
     assert f"[[Transcripts/{sid}|Full transcript]]" in page
     assert (vault.root / "Sessions" / "Transcripts" / f"{sid}.md").exists()
     dallon = vault.get("Dallon")
@@ -222,53 +222,61 @@ def test_what_happened_caps_beats_per_part_with_room_for_the_ending(setup, monke
     vault, sessions, make = setup
     monkeypatch.setattr(mem, "TRANSCRIPT_CHUNK_CHARS", 60)  # one line per part
     sid = _session(sessions)
-    beats = [{"at": "00:00", "text": "  "}] + [{"at": "00:05", "text": f"Beat {i}."} for i in range(1, 10)]
-    llm = FakeLLM(writeups=[{"events": beats}] * 20)
+    beats = [{"at": "00:00", "text": "  ", "status": "happened"}] + [
+        {"at": "00:05", "text": f"Beat {i}.", "status": "happened"} for i in range(1, 20)
+    ]
+    llm = FakeLLM(writeups=[{"claims": beats}] * 20)
     wait(make(llm).write_up(sid))
     parts = sum("Transcript:\n" in c for c in llm.calls)
     assert parts > 1
-    happened = _what_happened(vault)  # no story: the beats themselves; empty ones dropped
-    assert len(happened) == mem.PART_EVENTS * (parts - 1) + mem.FINAL_PART_EVENTS
+    happened = _what_happened(vault)  # empty claims dropped; each part is capped
+    assert len(happened) == mem.PART_CLAIMS * (parts - 1) + mem.FINAL_PART_CLAIMS
     assert "rolled initiative" in mem.WRITEUP_SYSTEM  # the prompt shows what not to write
 
 
-def _what_happened(vault) -> list[str]:
+def _section(vault, heading: str) -> list[str]:
     page = (vault.root / "Sessions" / "2026-10-08 The Desert Road.md").read_text()
-    return page.split("## What happened\n", 1)[1].split("\n\n", 1)[0].splitlines()
+    return page.split(f"## {heading}\n", 1)[1].split("\n\n", 1)[0].splitlines()
 
 
-def test_what_happened_is_the_retold_story(setup):
+def _what_happened(vault) -> list[str]:
+    return _section(vault, "What happened")
+
+
+def _still_open(vault) -> list[str]:
+    return _section(vault, "Still open")
+
+
+def test_a_joke_and_a_retraction_never_become_the_session(setup):
     vault, sessions, make = setup
+    vault.create("Magenta", "npc")
     sid = _session(sessions)
-    beats = [{"at": "00:00", "text": "Elara's attack failed."}, {"at": "00:05", "text": "Elara found a cave."}]
-    story = [
-        {"at": "00:05", "text": "After a scrappy fight, Elara stumbled on a hidden cave."},
-        {"at": "12:34", "text": "Its mouth breathed cold air."},  # not a beat's time: the previous one's
-        {"at": "00:00", "text": "  "},  # empty: dropped
+    claims = [
+        {"text": "Magenta died.", "status": "happened", "fixes": ""},
+        {"text": "They assassinate her.", "status": "joke", "fixes": ""},
+        {"text": "Magenta died.", "status": "retracted", "fixes": "Magenta died"},
+        {"text": "Magenta slumped to about one hit point; she did not die.", "status": "corrected", "fixes": "Magenta died"},
+        {"text": "Lumberg's letter is still undelivered.", "status": "open", "fixes": ""},
     ]
-    llm = FakeLLM(writeups=[{"events": beats}], story=story)
+    llm = FakeLLM(writeups=[{"claims": claims}])
     wait(make(llm).write_up(sid))
-    story_call = llm.calls[-2]  # then the summary
-    assert story_call.splitlines() == ["- 00:00 Elara's attack failed.", "- 00:05 Elara found a cave."]
-    assert _what_happened(vault) == [
-        "- 00:05 After a scrappy fight, [[Elara]] stumbled on a hidden cave.",
-        "- 00:05 Its mouth breathed cold air.",
-    ]
-
-
-def test_an_echoed_story_too_long_to_keep_falls_back_to_the_beats(setup):
-    vault, sessions, make = setup
-    sid = _session(sessions)
-    echo = [{"at": "00:00", "text": f"Line {i}."} for i in range(mem.STORY_MAX + 1)]
-    wait(make(FakeLLM(writeups=[{"events": [{"at": "00:05", "text": "Elara found a cave."}]}], story=echo)).write_up(sid))
-    assert _what_happened(vault) == ["- 00:05 [[Elara]] found a cave."]
+    summary_call = llm.calls[-1]
+    assert "They assassinate her." not in summary_call
+    assert "Magenta died." not in summary_call
+    assert "she did not die" in summary_call
+    assert "Still open:" in summary_call
+    page = (vault.root / "Sessions" / "2026-10-08 The Desert Road.md").read_text()
+    assert "assassinate" not in page
+    assert "Magenta died." not in page
+    assert "- [[Magenta]] slumped to about one hit point; she did not die." in _what_happened(vault)
+    assert _still_open(vault) == ["- Lumberg's letter is still undelivered."]
 
 
 def test_write_up_again_replaces_the_page_and_respects_rejections(setup):
     vault, sessions, make = setup
     sid = _session(sessions)
     spelling = {
-        "events": [{"at": "00:05", "text": "x"}],
+        "claims": [{"at": "00:05", "text": "x", "status": "happened"}],
         "facts": [],
         "new_names": [],
         "spellings": [{"heard": "Dilara", "means": "Elara"}],
@@ -537,10 +545,17 @@ def test_only_the_last_part_is_told_it_ends_the_session(setup, monkeypatch):
     assert [mem.SESSION_END in c for c in parts] == [False] * (len(parts) - 1) + [True]
 
 
-def test_a_retelling_that_stops_before_the_ending_is_not_used():
-    beats = [("00:05", "Found a cave."), ("2:30:00", "Made Thoronn king."), ("2:32:00", "Got a sword.")]
-    ending = {"2:30:00", "2:32:00"}
-    short = [{"at": "00:05", "text": "They found a cave."}]
-    assert mem._story(short, beats, ending) == beats  # never got to the finale
-    full = short + [{"at": "2:30:00", "text": "The kobolds crowned Thoronn and gave him a sword."}]
-    assert mem._story(full, beats, ending) == [("00:05", "They found a cave."), ("2:30:00", full[1]["text"])]
+def test_settle_keeps_the_correction_and_drops_the_joke():
+    happened, open_ = mem._settle(
+        [
+            {"text": "Magenta died.", "status": "happened"},
+            {"text": "They assassinate her.", "status": "joke"},
+            {"text": "", "status": "happened"},
+            {"text": "taken back", "status": "retracted", "fixes": "died"},
+            {"text": "Magenta was at about one hit point.", "status": "corrected", "fixes": "died"},
+            {"text": "The eggs have about seven days.", "status": "open"},
+            {"text": "nope", "status": "imagined"},
+        ]
+    )
+    assert happened == ["Magenta was at about one hit point."]
+    assert open_ == ["The eggs have about seven days."]

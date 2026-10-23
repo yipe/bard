@@ -2,9 +2,12 @@
 
 - import_notes: pasted session notes → Notes/<title>.md (verbatim) + entities and facts.
   The notes are the user's own, so what they name is added as confirmed.
-- write_up: a saved session's transcript → Sessions/<date> <title>.md (summary, highlights,
-  events with [[links]]) + its transcript in Sessions/Transcripts/, plus *suggested* facts,
-  entities and heard-as spellings for review in the Campaign tab.
+- write_up: a saved session's transcript → Sessions/<date> <title>.md. Each chunk is read as
+  claims (what happened, a joke, a correction, a retraction, or still open). Jokes and
+  retracted claims never reach the page; a correction replaces the claim it fixes. The
+  summary and "What happened" are written only from what remains, plus *suggested* facts,
+  entities and heard-as spellings for review in the Campaign tab. The transcript is copied
+  to Sessions/Transcripts/.
 - spelling_suggestions: no LLM; transcript words that look like misspellings of a glossary
   name ("Dilara" for Elara), and frequent unknown names worth adding.
 
@@ -34,10 +37,9 @@ from .campaign import TYPES, Entity, Vault, add_unique, everyday, norm, safe_nam
 log = logging.getLogger("troubadour")
 
 CHUNK_CHARS = 6000  # notes per extraction call; small enough for a fast, careful answer
-# Per transcript part, whatever the model returns. The last part gets more room: capped at 3 like the
-# rest, a finale (crowned, allied, handed a sword) came out as "the kobolds thanked the party".
-PART_FACTS, PART_NAMES, PART_EVENTS, FINAL_PART_EVENTS = 5, 8, 3, 8
-STORY_MAX = 20  # "What happened" beats on a session page
+# Per transcript part, whatever the model returns. The last part gets more room so the ending
+# and anything still unresolved can land as their own claims.
+PART_FACTS, PART_NAMES, PART_CLAIMS, FINAL_PART_CLAIMS = 5, 8, 8, 16
 MAX_SUGGESTED_FACTS = 30  # per write-up: more than anyone will review
 # Facts about a passing state, not a lasting truth ("Magenta has one hit point").
 FLEETING = re.compile(
@@ -46,7 +48,8 @@ FLEETING = re.compile(
 TRANSCRIPT_CHUNK_CHARS = 12000  # ~15 min of table talk per write-up call
 MAX_ITEMS = 40
 NAME_MAX, TEXT_MAX = 80, 300
-STORY_TEXT_MAX = 600  # a retold beat can merge a whole scene; 300 cut a finale off mid-sentence
+CLAIM_TEXT_MAX = 600  # one settled scene; 300 cut a finale off mid-sentence
+CLAIM_STATUS = {"happened", "open", "joke", "retracted", "corrected"}
 
 
 # ------------------------------------------------------------------ LLM
@@ -133,33 +136,43 @@ Answer with JSON only."""
 
 WRITEUP_SCHEMA = _obj(
     {
-        "events": {"type": "array", "items": _obj({"at": STR, "text": STR})},
+        "claims": {
+            "type": "array",
+            "items": _obj({"at": STR, "text": STR, "status": {"type": "string"}, "fixes": STR}),
+        },
         "facts": {"type": "array", "items": _obj({"about": STR, "text": STR})},
         "new_names": {"type": "array", "items": _obj({"name": STR, "type": KIND, "description": STR})},
         "spellings": {"type": "array", "items": _obj({"heard": STR, "means": STR})},
     }
 )
 
-WRITEUP_SYSTEM = """You keep the campaign wiki for a Dungeons & Dragons group. You get part of a session's
+WRITEUP_SYSTEM = """You keep the campaign log for a Dungeons & Dragons group. You get part of a session's
 speech-to-text transcript (it has errors, especially in names; each line starts with its time) and the
 campaign glossary.
-events: the story beats of this part (about 15 minutes of play): 1-3, one per scene, in order. A beat says
-what changed. Most important: revelations, the moments the party (or the GM) uncovers a secret, a twist or
-a threat, said plainly ("Kessia realized the water had been poisoned.", not "noticed it smelled strange").
-Then outcomes: what the party gained or lost (a title, allies, enemies, a gift or item (name it), a
-reward, a promise, a debt), said specifically ("The kobolds made Thoronn their king, swore to be the
-party's allies and gave him a ceremonial sword.", not "thanked the party"). Then: discoveries, decisions,
-who the party met and what they learned, a deal, a betrayal, a death, or a fight told as what it meant
-and how it ended. Never play-by-play: no single attacks, hits or misses, rolls, initiative, damage,
-movement, positioning, spells cast or rules talk.
-Bad: "Oola's attack failed." "Phishondra moved 30 feet." "The party rolled initiative." "Thoronn cast
-Moonbeam, dealing damage."
+claims: what this part asserts about the game, in order, one sentence each. Spell names as the glossary
+does. status is one of:
+- happened: the table settled it (the GM narrated it, or a player stated it and nobody took it back).
+- open: it is still unresolved at the end of this part (a letter not delivered, a rest not taken, a
+  question the table left hanging).
+- joke: a player joked, planned, speculated, or talked about real life. Not the game.
+- retracted: the table took an earlier claim back (a death that didn't stick, a guess the GM corrected).
+  fixes = a short quote copied from that earlier claim. Do not restate the false version as fact.
+- corrected: the settled truth that replaces an earlier claim. fixes = a short quote from the claim it
+  replaces. text is the truth, and it says what was wrong when that matters ("Magenta slumped to about
+  one hit point; she did not die.").
+Most important: revelations, twists and threats, said plainly ("Kessia realized the water had been
+poisoned.", not "noticed it smelled strange"). Then outcomes: what the party gained or lost (a title,
+allies, enemies, a gift or item (name it), a reward, a promise, a debt), said specifically ("The kobolds
+made Thoronn their king, swore to be the party's allies and gave him a ceremonial sword.", not "thanked
+the party"). Then discoveries, decisions, who they met, a deal, a betrayal, a death, or a fight as what
+it meant and how it ended. One scene or one fight is one claim. Never play-by-play: no single attacks,
+hits or misses, rolls, initiative, damage, movement, positioning, or a spell list.
+Bad: "Oola's attack failed." "Phishondra moved 30 feet." "The party rolled initiative."
 Good: "Skeletons wrapped in fire ambushed the party; they fought them off in the fog, and Thoronn's
 Moonbeam finished the last one."
-Each beat is one or two plain past-tense sentences, like a player recapping last session for a friend:
-specific and easy to read, not dramatic (no "terrifying", "harrowing", "grotesque" or other flourishes),
-naming who did it. Skip out-of-game chatter. at = the time of the line where the scene starts, copied
-exactly from the transcript.
+Plain past tense, like a player recapping last session for a friend: specific, not dramatic (no
+"terrifying", "harrowing", "grotesque"). at = the time of the line where it starts, copied exactly.
+fixes is "" except on retracted and corrected.
 facts: up to 5 lasting things learned about someone or something, that will still be true next session,
 each a full sentence naming its subject ("Magenta is afraid of heights."); about = that name as the
 glossary spells it, or as the transcript does if it's new. Never passing states (hit points, where
@@ -173,38 +186,22 @@ usually what the GM narrates or confirms ("They assassinate her." as a joke is n
 Never invent anything that isn't in the transcript. Answer with JSON only."""
 
 SESSION_END = (
-    "This part is the end of the session: use up to 8 beats here, and give each thing the party came away "
-    "with its own beat: a title, an alliance, a gift or item (named), a promise. The last beat says how it ended."
+    "This part is the end of the session. Include how it ended as a happened claim, each thing the party "
+    "came away with as its own happened claim (a title, an alliance, a named gift, a promise), and anything "
+    "still unresolved as open."
 )
 
 SUMMARY_SCHEMA = _obj({"title": STR, "summary": STR, "highlights": STRS})
 
-SUMMARY_SYSTEM = """You write the session page of a Dungeons & Dragons campaign wiki from a list of story
-beats. title: 2-5 words naming the session (no date). summary: one paragraph, at most 120 words, past
-tense, plain and matter-of-fact (no flourishes), ending with how the session ended and what the party came
-away with (titles, alliances, gifts and items by name, promises).
-highlights: the 3-8 moments the players will want to remember: revelations and twists first (secrets
-uncovered, a betrayal, a threat discovered), then outcomes (titles, alliances, enemies, named gifts and
-rewards), big wins, losses and decisions, and the finale if it changed something. Not routine fights,
-travel or shopping.
-Use only what the beats say. Answer with JSON only."""
-
-STORY_SCHEMA = _obj({"story": {"type": "array", "items": _obj({"at": STR, "text": STR})}})
-
-# Its own call: asked alongside the title and summary, the model echoed the first beats instead.
-STORY_SYSTEM = """You edit the "What happened" section of a Dungeons & Dragons campaign wiki. You get the session's
-story beats in order, each starting with its time. Retell the session as 6-12 beats for someone who wasn't
-there: merge everything about one scene or one fight into a single beat, keep what changed the story
-(revelations and twists above all, then outcomes such as titles, allies and enemies, discoveries,
-decisions, who the party met, what they won or lost, transformations, deaths, how fights ended), and drop
-the play-by-play: spells cast, attacks, saving throws, positioning, tactics. When you merge beats, keep
-every concrete gain or loss in them by name: titles, alliances, gifts and items, promises, deaths. Give
-the ending up to 3 beats of its own, one for each thing the party came away with (a title, an alliance, a
-gift), rather than cramming it into one.
-Each beat is one or two plain past-tense sentences, like a player recapping last session for a friend:
-clear and specific, a little colour is fine but not dramatic, no flourishes ("terrifying", "harrowing",
-"grotesque"). at = the time of the first beat it covers, copied exactly. Use only what the beats say.
-Answer with JSON only."""
+SUMMARY_SYSTEM = """You write the session page of a Dungeons & Dragons campaign log from claims the table
+settled. You are given two lists: what happened, and what is still open. title: 2-5 words naming the
+session (no date). summary: one paragraph, at most 120 words, past tense, plain and matter-of-fact (no
+flourishes). Say what changed, name what the party came away with, and end where the session ended. If
+something was corrected, state the truth, not the version that was taken back.
+highlights: the 3-8 moments the players will want to remember: revelations and twists first, then outcomes
+(titles, alliances, enemies, named gifts), big decisions, and the finale if it changed something. Not
+routine fights, travel or shopping. Do not highlight an open question as if it were settled.
+Use only what the lists say. Answer with JSON only."""
 
 
 # ------------------------------------------------------------------ validation
@@ -214,18 +211,43 @@ def _text(value, limit: int = TEXT_MAX) -> str:
     return re.sub(r"\s+", " ", value).strip()[:limit] if isinstance(value, str) else ""
 
 
-def _story(value, events: list[tuple[str, str]], ending: set[str]) -> list[tuple[str, str]]:
-    """The retold "What happened" as (time, text). A time must be one of the beats' (else the previous
-    one's: the model can't invent a moment). It must be short and reach the session's ending (`ending`:
-    the last part's beat times); otherwise (empty, or it echoed the beats and ran out before the end) the
-    beats themselves."""
-    times = {at for at, _ in events}
-    out: list[tuple[str, str]] = []
-    for beat in value if isinstance(value, list) else []:
-        if isinstance(beat, dict) and (text := _text(beat.get("text"), STORY_TEXT_MAX)):
-            at = beat.get("at")
-            out.append((at if at in times else out[-1][0] if out else events[0][0], text))
-    return out if 0 < len(out) <= STORY_MAX and out[-1][0] in ending else events
+def _touches(fixes: str, text: str) -> bool:
+    needle = _text(fixes).casefold()
+    return bool(needle) and needle in text.casefold()
+
+
+def _settle(claims: list[dict]) -> tuple[list[str], list[str]]:
+    """What the table left standing, then what is still open.
+
+    A joke never lands. A retraction removes the earlier claim it quotes and does not itself become
+    a fact. A correction replaces the claim it quotes; if nothing matches, the correction is the fact.
+    """
+    happened: list[str] = []
+    open_: list[str] = []
+    for claim in claims:
+        status = claim.get("status")
+        text = _text(claim.get("text"), CLAIM_TEXT_MAX)
+        if status not in CLAIM_STATUS or not text:
+            continue
+        fixes = claim.get("fixes") if isinstance(claim.get("fixes"), str) else ""
+        if status == "joke":
+            continue
+        if status == "retracted":
+            for i in range(len(happened) - 1, -1, -1):
+                if _touches(fixes, happened[i]):
+                    del happened[i]
+                    break
+            continue
+        if status == "corrected":
+            for i in range(len(happened) - 1, -1, -1):
+                if _touches(fixes, happened[i]):
+                    happened[i] = text
+                    break
+            else:
+                happened.append(text)
+            continue
+        (open_ if status == "open" else happened).append(text)
+    return happened, open_
 
 
 _SMALL = {"of", "the", "and", "de", "du", "da", "von", "van", "a", "an", "in", "on", "to"}
@@ -466,17 +488,14 @@ class Memory:
         body = "\n".join(lines)
         heard_text = norm(body)
         parts = chunks(body.replace("\n", "\n\n"), TRANSCRIPT_CHUNK_CHARS)
-        job.total = len(parts) + 2
+        job.total = len(parts) + 1
         self.emit(job)
-        events: list[tuple[str, str]] = []  # (clock of the part's first line, event)
-        ending: set[str] = set()  # the last part's beat times: a retelling must get that far
+        claims: list[dict] = []
         facts: list[tuple[str, str]] = []
         new_names: dict[str, tuple[str, str]] = {}
         spellings: list[tuple[str, str]] = []
         hints = misspelling_hints(body, self.vault.entities())
         for i, part in enumerate(parts):
-            first = part.split(" ", 1)[0]
-            clocks = set(re.findall(r"^(\d+:\d\d(?::\d\d)?) ", part, re.M))
             prompt = f"Glossary:\n{glossary_brief(self.vault)}\n\n"
             if hints:
                 prompt += f"Likely misspellings of glossary names in this transcript:\n{hints}\n\n"
@@ -484,12 +503,10 @@ class Memory:
             if last:
                 prompt += f"{SESSION_END}\n\n"
             out = self.llm.json(WRITEUP_SYSTEM, prompt + f"Transcript:\n{part}", WRITEUP_SCHEMA)
-            part_events = [ev for ev in out.get("events") or [] if isinstance(ev, dict) and _text(ev.get("text"))]
-            for ev in part_events[: FINAL_PART_EVENTS if last else PART_EVENTS]:
-                at = ev.get("at") if ev.get("at") in clocks else first  # only a time this part really has
-                events.append((at, _text(ev.get("text"))))
-                if last:
-                    ending.add(at)
+            part_claims = [
+                c for c in out.get("claims") or [] if isinstance(c, dict) and _text(c.get("text"), CLAIM_TEXT_MAX)
+            ]
+            claims += part_claims[: FINAL_PART_CLAIMS if last else PART_CLAIMS]
             part_facts = [
                 (about, text)
                 for f in out.get("facts") or []
@@ -510,12 +527,11 @@ class Memory:
             job.message = f"Read part {job.done} of {len(parts)}"
             self.emit(job)
 
-        beats = "\n".join(f"- {at} {e}" for at, e in events)
-        story = _story(self.llm.json(STORY_SYSTEM, beats, STORY_SCHEMA).get("story"), events, ending) if events else []
-        job.done += 1
-        job.message = "Told the story"
-        self.emit(job)
-        summary = self.llm.json(SUMMARY_SYSTEM, "\n".join(f"- {e}" for _, e in events) or "- (nothing happened)", SUMMARY_SCHEMA)
+        happened, open_ = _settle(claims)
+        settled = "\n".join(f"- {e}" for e in happened) or "- (nothing happened)"
+        if open_:
+            settled += "\n\nStill open:\n" + "\n".join(f"- {e}" for e in open_)
+        summary = self.llm.json(SUMMARY_SYSTEM, settled, SUMMARY_SCHEMA)
         title = _text(summary.get("title"), 60) or "Session"
         date = time.strftime("%Y-%m-%d", time.localtime(s["started_at"]))
         sid = s["id"]
@@ -571,11 +587,14 @@ class Memory:
             self.vault.update(e.name, heard_as_suggested=[*e.heard_as_suggested, heard])
             job.suggested += 1
 
-        linked = [link_names(t, self.vault) for _, t in story]
+        linked = [link_names(t, self.vault) for t in happened]
+        open_linked = [link_names(t, self.vault) for t in open_]
         highlights = [
             link_names(h, self.vault) for h in (_text(x) for x in summary.get("highlights") or [] if isinstance(x, str)) if h
         ]
-        mentioned = sorted({e.name for e in self.vault.entities() if any(f"[[{e.name}]]" in x for x in [*linked, *highlights])})
+        mentioned = sorted(
+            {e.name for e in self.vault.entities() if any(f"[[{e.name}]]" in x for x in [*linked, *open_linked, *highlights])}
+        )
         tdir = self.vault.root / "Sessions" / "Transcripts"
         tdir.mkdir(parents=True, exist_ok=True)
         (tdir / f"{sid}.md").write_text(transcript.markdown(record), encoding="utf-8")
@@ -588,8 +607,11 @@ class Memory:
             "## Highlights",
             *(f"- {h}" for h in highlights),
             "",
+            "## Still open",
+            *(f"- {e}" for e in open_linked),
+            "",
             "## What happened",
-            *(f"- {when} {e}" for (when, _), e in zip(story, linked, strict=True)),
+            *(f"- {e}" for e in linked),
             "",
             "## Mentioned",
             ", ".join(f"[[{n}]]" for n in mentioned) or "(nobody from the glossary)",
