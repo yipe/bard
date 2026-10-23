@@ -7,6 +7,7 @@ import { VoicesPanel } from "./VoicesPanel"
 
 export function SessionView() {
   const liveMic = useStore((s) => s.session?.source?.kind === "mic" && s.session.status !== "idle")
+  const qualityOpen = useStore((s) => s.session?.audio_monitor ?? true)
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SessionHeader />
@@ -17,9 +18,18 @@ export function SessionView() {
           <ChatFeed />
         </main>
         <aside className="space-y-6 overflow-y-auto border-t p-4 lg:w-80 lg:border-t-0 lg:border-l">
-          {liveMic && <LiveQualityBox />}
           <VoicesPanel />
         </aside>
+        {liveMic &&
+          (qualityOpen ? (
+            <aside className="flex min-h-0 w-full shrink-0 flex-col overflow-y-auto border-t p-4 lg:w-80 lg:border-t-0 lg:border-l">
+              <LiveQualityBox />
+            </aside>
+          ) : (
+            <div className="flex shrink-0 border-t p-2 lg:border-t-0 lg:border-l">
+              <LiveQualityBox />
+            </div>
+          ))}
       </div>
     </div>
   )

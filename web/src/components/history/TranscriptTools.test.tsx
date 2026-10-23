@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { useCampaign } from "@/lib/campaignStore"
 import { applyEvent, useStore } from "@/lib/store"
-import type { Fix, ImprovedInfo, SavedSession, SpellingInfo } from "@/lib/types"
+import type { Fix, ImprovedInfo, RetranscribedInfo, SavedSession, SpellingInfo } from "@/lib/types"
 import { campaign, campaignJob, recordMessage, savedSession, sessionRecord } from "@/test/fixtures"
 import { mockFetch } from "@/test/mockFetch"
 import { SessionViewer } from "./SessionViewer"
@@ -15,7 +15,13 @@ const initialCampaign = useCampaign.getState()
 const initialLive = useStore.getState()
 
 /** Fake server: the transcript says `text` and carries `improved` etc. (all mutable by the test). */
-function server(state: { text: string; improved?: ImprovedInfo; spelling?: SpellingInfo; fixes?: Fix[] }) {
+function server(state: {
+  text: string
+  improved?: ImprovedInfo
+  spelling?: SpellingInfo
+  retranscribed?: RetranscribedInfo
+  fixes?: Fix[]
+}) {
   return mockFetch((c) => {
     if (c.url === "/api/campaign") return campaign()
     if (c.url === "/api/sessions")
@@ -25,7 +31,15 @@ function server(state: { text: string; improved?: ImprovedInfo; spelling?: Spell
         id: ID,
         messages: [recordMessage({ id: "m1", speaker: "Nora", text: state.text, fixes: state.fixes })],
       })
-      return { ...r, session: { ...r.session, improved: state.improved, spelling: state.spelling } }
+      return {
+        ...r,
+        session: {
+          ...r.session,
+          improved: state.improved,
+          spelling: state.spelling,
+          retranscribed: state.retranscribed,
+        },
+      }
     }
     if (c.url === `/api/sessions/${ID}/improve`)
       return campaignJob({ id: "i1", kind: "improve", title: ID, state: "queued" })
@@ -182,6 +196,41 @@ describe("Improve transcript", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retranscribe anyway" }))
     await act(async () => {})
     expect(writes()).toEqual([{ method: "POST", url: `/api/sessions/${ID}/retranscribe`, body: undefined }])
+  })
+
+  it("shows the retranscribe result in a dialog, not in the toolbar", async () => {
+    const state: { text: string; retranscribed?: RetranscribedInfo } = { text: "Dilara waves." }
+    server(state)
+    await renderViewer(savedSession({ id: ID, audio: true, replayable: true }))
+    fireEvent.click(screen.getByRole("button", { name: "Retranscribe" }))
+    fireEvent.click(screen.getByRole("button", { name: "Retranscribe anyway" }))
+    await act(async () => {})
+    act(() =>
+      applyEvent({
+        type: "campaign.job",
+        data: campaignJob({ id: "r1", kind: "retranscribe", title: ID, state: "running", done: 1, total: 2 }),
+      }),
+    )
+    state.retranscribed = {
+      at: 1,
+      changed: 122,
+      lines: 1595,
+      heard_next: 59,
+      rematch: 63,
+      backup: "transcript.before-retranscribe.json",
+    }
+    await act(async () =>
+      applyEvent({
+        type: "campaign.job",
+        data: campaignJob({ id: "r1", kind: "retranscribe", title: ID, state: "done", done: 2, total: 2 }),
+      }),
+    )
+    expect(await screen.findByRole("dialog")).toHaveTextContent("122 of 1595 lines reassigned")
+    expect(screen.getByRole("dialog")).toHaveTextContent("59 were hearing the next person")
+    expect(screen.getByRole("dialog")).toHaveTextContent("transcript.before-retranscribe.json")
+    expect(screen.queryByText(/122 of 1595 reassigned/)).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "OK" }))
+    expect(screen.queryByRole("dialog")).toBeNull()
   })
 
   it("Fix spellings shows a failed job's message", async () => {

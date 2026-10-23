@@ -42,7 +42,7 @@ export function LiveQualityBox() {
     )
   }
   return (
-    <section aria-label="Audio quality" className="space-y-3 rounded-lg border p-3">
+    <section aria-label="Audio quality" className="flex min-h-0 flex-1 flex-col space-y-3">
       <div className="flex items-center gap-2 text-sm font-semibold">
         <AudioLines className="size-4" /> Audio quality
         <Button

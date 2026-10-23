@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from "react"
 import { AlertCircle, AudioLines, Loader2, SpellCheck, Undo2, Wand2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { api } from "@/lib/api"
 import { jobActive, jobCount } from "@/lib/campaign"
@@ -72,6 +73,7 @@ export function TranscriptTools({
   const jobs = useCampaign((s) => s.jobs)
   const [confirmRestore, setConfirmRestore] = useState(false)
   const [confirmRetranscribe, setConfirmRetranscribe] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // The latest job of each kind for this session (insertion order; job ids are random).
@@ -94,7 +96,8 @@ export function TranscriptTools({
       if (!job) continue
       if (jobActive(job)) watched.current.add(job.id)
       else if (job.state === "done" && watched.current.delete(job.id)) {
-        toast.success(job.message || TOOLS[kind].done)
+        if (kind === "retranscribe") setReportOpen(true)
+        else toast.success(job.message || TOOLS[kind].done)
         onReload()
       }
     }
@@ -191,15 +194,6 @@ export function TranscriptTools({
           )}
           {improved && spelling && <span aria-hidden>·</span>}
           {spelling && <span>Spellings fixed · {spelling.fixed}</span>}
-          {retranscribed && (
-            <span>
-              {(improved || spelling) && <span aria-hidden> · </span>}
-              Retranscribed · {retranscribed.changed} of {retranscribed.lines} reassigned
-              {retranscribed.heard_next > 0 && ` · ${retranscribed.heard_next} were hearing the next person`}
-              {retranscribed.rematch > 0 && ` · ${retranscribed.rematch} match someone else on their own audio`}
-              {` · previous copy: ${retranscribed.backup}`}
-            </span>
-          )}
           {confirmRestore ? (
             <>
               <Button size="xs" variant="destructive" disabled={busy} onClick={restore}>
@@ -216,6 +210,28 @@ export function TranscriptTools({
           )}
         </span>
       )}
+      <Dialog open={reportOpen && retranscribed != null} onOpenChange={setReportOpen}>
+        <DialogContent showCloseButton={false} className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Retranscribed</DialogTitle>
+          </DialogHeader>
+          {retranscribed && (
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>
+                {retranscribed.changed} of {retranscribed.lines} lines reassigned.
+              </p>
+              {retranscribed.heard_next > 0 && <p>{retranscribed.heard_next} were hearing the next person.</p>}
+              {retranscribed.rematch > 0 && <p>{retranscribed.rematch} match someone else on their own audio.</p>}
+              <p>Previous copy: {retranscribed.backup}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button size="sm" onClick={() => setReportOpen(false)}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </span>
   )
 }
