@@ -80,11 +80,17 @@ beforeEach(() => {
 })
 afterEach(() => vi.restoreAllMocks())
 
+function openTranscript() {
+  fireEvent.click(screen.getByRole("button", { name: "Transcript" }))
+}
+
 describe("Improve transcript", () => {
   it("is hidden when the session has no replayable audio", async () => {
     server({ text: "Dilara waves." })
     await renderViewer(savedSession({ id: ID, replayable: false }))
+    openTranscript()
     expect(screen.queryByRole("button", { name: /Improve transcript/ })).toBeNull()
+    expect(screen.getByRole("button", { name: /Fix spellings/ })).toBeInTheDocument()
   })
 
   it("posts the improve job, shows progress, and reloads the transcript when it's done", async () => {
@@ -93,6 +99,7 @@ describe("Improve transcript", () => {
     await renderViewer(savedSession({ id: ID, replayable: true }))
     expect(screen.getByText("Dilara waves.")).toBeInTheDocument()
 
+    openTranscript()
     fireEvent.click(screen.getByRole("button", { name: /Improve transcript/ }))
     await act(async () => {})
     expect(writes()).toEqual([{ method: "POST", url: `/api/sessions/${ID}/improve`, body: undefined }])
@@ -109,7 +116,7 @@ describe("Improve transcript", () => {
     await waitFor(() => expect(screen.getByText("Elara waves.")).toBeInTheDocument())
     expect(recordLoads(calls)).toBe(2)
     expect(screen.getByText(/Improved · 143 lines changed/)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Improve transcript/ })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Transcript" })).toBeEnabled()
   })
 
   it("doesn't reload for an improve job that finished before the viewer opened", async () => {
@@ -143,6 +150,7 @@ describe("Improve transcript", () => {
     await renderViewer(savedSession({ id: ID, replayable: true, restorable: true }))
     expect(screen.getByText(/Improved · 1 line changed/)).toBeInTheDocument()
 
+    openTranscript()
     fireEvent.click(screen.getByRole("button", { name: /Restore original/ }))
     expect(writes()).toEqual([])
     fireEvent.click(screen.getByRole("button", { name: "Confirm restore" }))
@@ -159,6 +167,7 @@ describe("Improve transcript", () => {
     const { calls, writes } = server(state)
     // No audio: Improve is hidden, Fix spellings still works (text only).
     await renderViewer(savedSession({ id: ID, replayable: false }))
+    openTranscript()
     expect(screen.queryByRole("button", { name: /Improve transcript/ })).toBeNull()
 
     fireEvent.click(screen.getByRole("button", { name: /Fix spellings/ }))
@@ -183,6 +192,7 @@ describe("Improve transcript", () => {
     expect(recordLoads(calls)).toBe(2)
     expect(screen.getByText("Elara")).toHaveAttribute("title", 'Heard as "Dilara"')
     expect(screen.getByText("Spellings fixed · 12")).toBeInTheDocument()
+    openTranscript()
     expect(screen.getByRole("button", { name: /Restore original/ })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Fix spellings/ })).toBeEnabled()
   })
@@ -190,6 +200,7 @@ describe("Improve transcript", () => {
   it("Retranscribe warns before it posts, because hand-fixed speakers can move", async () => {
     const { writes } = server({ text: "Dilara waves." })
     await renderViewer(savedSession({ id: ID, audio: true, replayable: true }))
+    openTranscript()
     fireEvent.click(screen.getByRole("button", { name: "Retranscribe" }))
     expect(writes()).toEqual([])
     expect(screen.getByText(/copy of this transcript is saved first/)).toBeInTheDocument()
@@ -202,6 +213,7 @@ describe("Improve transcript", () => {
     const state: { text: string; retranscribed?: RetranscribedInfo } = { text: "Dilara waves." }
     server(state)
     await renderViewer(savedSession({ id: ID, audio: true, replayable: true }))
+    openTranscript()
     fireEvent.click(screen.getByRole("button", { name: "Retranscribe" }))
     fireEvent.click(screen.getByRole("button", { name: "Retranscribe anyway" }))
     await act(async () => {})

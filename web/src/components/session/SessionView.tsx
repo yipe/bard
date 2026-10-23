@@ -26,7 +26,7 @@ export function SessionView() {
               <LiveQualityBox />
             </aside>
           ) : (
-            <div className="flex shrink-0 border-t p-2 lg:border-t-0 lg:border-l">
+            <div className="flex w-full shrink-0 justify-center border-t py-2 lg:w-12 lg:flex-col lg:border-t-0 lg:border-l">
               <LiveQualityBox />
             </div>
           ))}

@@ -36,8 +36,15 @@ export function LiveQualityBox() {
 
   if (!on) {
     return (
-      <Button variant="outline" size="sm" disabled={busy} onClick={() => setMonitor(true)}>
-        <AudioLines /> Show audio quality
+      <Button
+        variant="ghost"
+        size="icon"
+        disabled={busy}
+        aria-label="Show audio quality"
+        title="Show audio quality"
+        onClick={() => setMonitor(true)}
+      >
+        <AudioLines />
       </Button>
     )
   }

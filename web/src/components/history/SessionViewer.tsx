@@ -75,18 +75,23 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-2">
-        <Button size="sm" variant="ghost" onClick={onBack}>
-          <ArrowLeft /> All sessions
-        </Button>
-        <div className="min-w-0">
-          <div className="text-sm font-medium">{dateTime(summary.started_at)}</div>
-          <div className="truncate text-xs text-muted-foreground">
-            {sourceLabel(summary.source)} · <span className="tabular-nums">{hms(summary.duration_s)}</span> ·{" "}
-            {summary.lines} lines
+      <header className="border-b">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
+          <Button size="sm" variant="ghost" onClick={onBack}>
+            <ArrowLeft /> All sessions
+          </Button>
+          <div className="min-w-0">
+            <div className="text-sm font-medium">{dateTime(summary.started_at)}</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {sourceLabel(summary.source)} · <span className="tabular-nums">{hms(summary.duration_s)}</span> ·{" "}
+              {summary.lines} lines
+            </div>
+          </div>
+          <div className="ml-auto">
+            <WriteUpButton sessionId={summary.id} />
           </div>
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-4 py-1.5">
           {summary.audio && (
             <audio
               ref={audioRef}
@@ -96,17 +101,18 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
               className="h-8 w-72 max-w-full"
             />
           )}
-          <SessionDownloads session={summary} />
-          <TranscriptTools
-            summary={summary}
-            improved={state.status === "ready" ? state.record.improved : null}
-            spelling={state.status === "ready" ? state.record.spelling : null}
-            retranscribed={state.status === "ready" ? (state.record.retranscribed ?? null) : null}
-            onReload={reload}
-          />
-          <WriteUpButton sessionId={summary.id} />
+          <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+            <SessionDownloads session={summary} />
+            <TranscriptTools
+              summary={summary}
+              improved={state.status === "ready" ? state.record.improved : null}
+              spelling={state.status === "ready" ? state.record.spelling : null}
+              retranscribed={state.status === "ready" ? (state.record.retranscribed ?? null) : null}
+              onReload={reload}
+            />
+          </div>
         </div>
-      </div>
+      </header>
       {state.status === "loading" ? (
         <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Loading session…
@@ -202,9 +208,15 @@ function RecordBody({
             <RecordingQualityPanel sessionId={audioQuality} />
           </aside>
         ) : (
-          <div className="flex shrink-0 border-t p-2 lg:border-t-0 lg:border-l">
-            <Button variant="outline" size="sm" aria-label="Show audio quality" onClick={() => setQualityOpen(true)}>
-              <AudioLines /> Show audio quality
+          <div className="flex w-full shrink-0 justify-center border-t py-2 lg:w-12 lg:flex-col lg:border-t-0 lg:border-l">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Show audio quality"
+              title="Show audio quality"
+              onClick={() => setQualityOpen(true)}
+            >
+              <AudioLines />
             </Button>
           </div>
         ))}
