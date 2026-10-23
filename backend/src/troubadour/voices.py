@@ -135,9 +135,11 @@ class VoiceMatcher:
         return self.matrix[self.names.index(name)]
 
     def embed(self, audio: np.ndarray, start: float, end: float) -> np.ndarray | None:
+        """Voiceprint of [start, end]. A short span grows backward to pad_to, never forward:
+        audio after `end` is the next speaker, and centering the pad on the span was labeling
+        the line as them."""
         if end - start < self.pad_to:
-            mid = (start + end) / 2
-            start, end = max(0.0, mid - self.pad_to / 2), min(len(audio) / SR, mid + self.pad_to / 2)
+            start = max(0.0, end - self.pad_to)
         return embed_span(self.embedder, audio, start, end)
 
     def scores(self, vec: np.ndarray) -> np.ndarray:

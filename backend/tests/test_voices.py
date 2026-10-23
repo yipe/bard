@@ -79,11 +79,13 @@ def test_observe_with_single_voice_uses_unknown_threshold(emb):
     m.observe("alice", vec(emb, 200), duration=4.0)
 
 
-def test_embed_pads_short_spans(emb):
+def test_embed_pads_short_spans_backward_only(emb):
     m = VoiceMatcher(emb, pad_to=1.5)
-    audio = tone(200, 3)
-    assert embed_span(emb, audio, 1.0, 1.4) is None  # raw 0.4 s: too short
-    assert m.embed(audio, 1.0, 1.4) is not None  # padded to 1.5 s around its center
+    audio = np.concatenate([tone(200, 1.0), tone(800, 2.0)])
+    assert embed_span(emb, audio, 0.2, 0.6) is None  # raw 0.4 s: too short
+    own = m.embed(tone(200, 2.0), 0.0, 1.5)
+    # The span is the 200 Hz voice; growing it must not take the 800 Hz voice that follows.
+    assert m.embed(audio, 0.2, 0.8) @ own > 0.9
 
 
 def test_normalize():

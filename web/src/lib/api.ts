@@ -102,6 +102,8 @@ export const api = {
   sessionRecord: (id: string) => req<SessionRecord>("GET", transcriptUrl("json", id)),
   /** Re-transcribe a saved session with the current glossary (background job). */
   improveSession: (id: string) => req<CampaignJob>("POST", `/api/sessions/${encodeURIComponent(id)}/improve`),
+  /** Re-assign speakers on a saved recording. Overwrites hand-corrected speakers; the first original is kept. */
+  retranscribeSession: (id: string) => req<CampaignJob>("POST", `/api/sessions/${encodeURIComponent(id)}/retranscribe`),
   /** Run the spelling cleanup over a saved session (background job; no re-listening). */
   fixSpellings: (id: string) => req<CampaignJob>("POST", `/api/sessions/${encodeURIComponent(id)}/spelling`),
   /** Put an improved/spell-fixed session's original transcript back. */

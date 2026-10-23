@@ -1,5 +1,5 @@
 import { speakerKey } from "./speaker"
-import type { Fix, ImprovedInfo, RecordPlayer, SessionRecord, SpellingInfo } from "./types"
+import type { Fix, ImprovedInfo, RecordPlayer, RetranscribedInfo, SessionRecord, SpellingInfo } from "./types"
 
 /** The backend's player palette; records saved before colors were stored fall back to it by index. */
 export const PLAYER_PALETTE = [
@@ -49,6 +49,8 @@ export interface LoadedRecord {
   improved: ImprovedInfo | null
   /** Present once "Fix spellings" ran over it. */
   spelling: SpellingInfo | null
+  /** Present once Retranscribe reassigned speakers. */
+  retranscribed: RetranscribedInfo | null
 }
 
 function viewerPlayer(p: RecordPlayer, index: number): ViewerPlayer {
@@ -103,5 +105,6 @@ export function loadRecord(record: SessionRecord): LoadedRecord {
     lines,
     improved: record.session?.improved ?? null,
     spelling: record.session?.spelling ?? null,
+    retranscribed: record.session?.retranscribed ?? null,
   }
 }

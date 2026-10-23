@@ -1790,9 +1790,66 @@ class Engine:
             )
             self.messages[m.id] = m
             out = m.to_json()
+            prev_id = next(reversed(list(self.messages)[:-1]), None)
         self.bus.emit("message.created", out)
+        if prev_id is not None:
+            self._separate_from_next(audio, prev_id, t0)
         if unsure:
             self.cleanup_q.put(m.id)
+
+    def _separate_from_next(self, audio: np.ndarray, prev_id: str, next_start: float) -> None:
+        """The previous line's voiceprint was taken before we knew this line would follow.
+        Rescore it on audio that stops where this line starts, so its tail isn't this speaker."""
+        with self.lock:
+            prev = self.messages.get(prev_id)
+            if prev is None or prev.pinned or self.matcher is None:
+                return
+            if next_start - prev.t_end > self.matcher.pad_to:
+                return
+            end = min(prev.t_end, next_start)
+            # The cutter keeps ~200 ms after the last speech frame; that is where a quick reply sits.
+            if next_start - prev.t_end < 0.5 and end - prev.t_start > 0.7:
+                end -= 0.2
+            start = prev.t_start
+            if end - start < 0.5:
+                return
+        vec = self._embed(audio, start, end)
+        if vec is None:
+            return
+        with self.lock:
+            prev = self.messages.get(prev_id)
+            if prev is None or prev.pinned or not self.matcher.names:
+                return
+            scores = self.matcher.scores(vec)
+            best = int(np.argmax(scores))
+            score = float(scores[best])
+            names = self.matcher.names
+            current = float(scores[names.index(prev.voice_id)]) if prev.voice_id in names else -1.0
+            # A near tie stays: the same person, heard a little differently, is not a new speaker.
+            if score < self.matcher.unknown_below or score - current < 0.1:
+                return
+            pick = self._character_tiebreak(scores, names[best], prev.voice_id)
+            if pick == prev.voice_id:
+                return
+            prev.vec = vec
+            dur = prev.t_end - prev.t_start
+            old = self.voices.get(prev.voice_id)
+            if old is not None:
+                old.seconds = max(0.0, old.seconds - dur)
+            new = self.voices.get(pick)
+            if new is not None:
+                new.seconds += dur
+                new.spans.append((prev.t_start, prev.t_end))
+            prev.voice_id = pick
+            prev.confidence = score
+            prev.provisional = score < PROVISIONAL_BELOW
+            patch = {
+                "id": prev.id,
+                "voice_id": pick,
+                "confidence": round(score, 3),
+                "provisional": prev.provisional,
+            }
+        self._emit_patches([patch])
 
     # ----------------------------------------------------------- spelling cleanup
 

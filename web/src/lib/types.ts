@@ -88,6 +88,17 @@ export interface ImprovedInfo {
   model: string
   changed: number /* lines whose text changed */
 }
+/** Set on a saved record once Retranscribe reassigned speakers. The words are unchanged. */
+export interface RetranscribedInfo {
+  at: number
+  changed: number
+  lines: number
+  /** Lines whose old label was hearing the person who spoke next. */
+  heard_next: number
+  /** Lines whose own audio now matches a different enrolled voice. */
+  rematch: number
+  backup: string
+}
 /** Set on a saved record once "Fix spellings" ran over it. */
 export interface SpellingInfo {
   at: number /* epoch seconds */
@@ -215,7 +226,7 @@ export interface CampaignAnswer {
 }
 export interface CampaignJob {
   id: string
-  kind: "import" | "writeup" | "improve" | "spelling" | "backup" | "restore"
+  kind: "import" | "writeup" | "improve" | "spelling" | "retranscribe" | "backup" | "restore"
   title: string /* notes title, or the session id for a write-up / improve */
   state: "queued" | "running" | "done" | "error"
   done: number
@@ -277,6 +288,7 @@ export interface SessionRecord {
   session: Omit<SavedSession, "audio" | "replayable" | "restorable" | "quality"> & {
     improved?: ImprovedInfo
     spelling?: SpellingInfo
+    retranscribed?: RetranscribedInfo
   }
   players: RecordPlayer[]
   voices: {

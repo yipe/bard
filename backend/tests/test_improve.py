@@ -101,6 +101,15 @@ def test_improve_backs_up_once_and_restore_puts_it_back(api):
     assert client.post(f"/api/sessions/{SID}/restore").status_code == 404
 
 
+def test_speaker_window_stops_before_the_next_line():
+    # A reply 0.1s after this line: drop the trailing pad, and don't use audio past the reply.
+    assert improve.speaker_window(0.0, 2.0, None, 2.1) == (0.0, 1.8)
+    # The next line is far enough that this line's own span is the voice.
+    assert improve.speaker_window(0.0, 2.0, None, 5.0) == (0.0, 2.0)
+    # Don't reach back into the previous line, and give up when that leaves under half a second.
+    assert improve.speaker_window(1.0, 1.4, 1.2, None) is None
+
+
 def test_improve_unknown_session(api):
     client, _ = api
     assert client.post("/api/sessions/2026-01-01_000000-ffff/improve").status_code == 404

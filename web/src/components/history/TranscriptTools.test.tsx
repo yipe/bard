@@ -31,6 +31,8 @@ function server(state: { text: string; improved?: ImprovedInfo; spelling?: Spell
       return campaignJob({ id: "i1", kind: "improve", title: ID, state: "queued" })
     if (c.url === `/api/sessions/${ID}/spelling`)
       return campaignJob({ id: "s1", kind: "spelling", title: ID, state: "queued" })
+    if (c.url === `/api/sessions/${ID}/retranscribe`)
+      return campaignJob({ id: "r1", kind: "retranscribe", title: ID, state: "queued" })
     if (c.url === `/api/sessions/${ID}/restore`) {
       state.improved = undefined
       state.text = "Dilara waves."
@@ -169,6 +171,17 @@ describe("Improve transcript", () => {
     expect(screen.getByText("Spellings fixed · 12")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Restore original/ })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Fix spellings/ })).toBeEnabled()
+  })
+
+  it("Retranscribe warns before it posts, because hand-fixed speakers can move", async () => {
+    const { writes } = server({ text: "Dilara waves." })
+    await renderViewer(savedSession({ id: ID, audio: true, replayable: true }))
+    fireEvent.click(screen.getByRole("button", { name: "Retranscribe" }))
+    expect(writes()).toEqual([])
+    expect(screen.getByText(/copy of this transcript is saved first/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Retranscribe anyway" }))
+    await act(async () => {})
+    expect(writes()).toEqual([{ method: "POST", url: `/api/sessions/${ID}/retranscribe`, body: undefined }])
   })
 
   it("Fix spellings shows a failed job's message", async () => {

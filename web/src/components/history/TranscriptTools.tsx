@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react"
-import { AlertCircle, Loader2, SpellCheck, Undo2, Wand2 } from "lucide-react"
+import { AlertCircle, AudioLines, Loader2, SpellCheck, Undo2, Wand2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { api } from "@/lib/api"
 import { jobActive, jobCount } from "@/lib/campaign"
 import { attempt, campaignActions, useCampaign } from "@/lib/campaignStore"
-import type { CampaignJob, ImprovedInfo, SavedSession, SpellingInfo } from "@/lib/types"
+import type { CampaignJob, ImprovedInfo, RetranscribedInfo, SavedSession, SpellingInfo } from "@/lib/types"
 
-type ToolKind = "improve" | "spelling"
+type ToolKind = "improve" | "spelling" | "retranscribe"
 
 const TOOLS: Record<
   ToolKind,
@@ -37,6 +37,14 @@ const TOOLS: Record<
     failed: "Fixing spellings failed",
     start: api.fixSpellings,
   },
+  retranscribe: {
+    label: "Retranscribe",
+    tip: "Re-assign who spoke each line from the recording. The words stay. A copy of the transcript is saved first. Lines you corrected by hand can move.",
+    icon: <AudioLines />,
+    done: "Speakers reassigned",
+    failed: "Retranscribe failed",
+    start: api.retranscribeSession,
+  },
 }
 
 /**
@@ -48,6 +56,7 @@ export function TranscriptTools({
   summary,
   improved,
   spelling,
+  retranscribed,
   onReload,
 }: {
   summary: SavedSession
@@ -55,11 +64,14 @@ export function TranscriptTools({
   improved: ImprovedInfo | null
   /** From the loaded record; null when spellings were never fixed. */
   spelling: SpellingInfo | null
+  /** From the loaded record; null when speakers were never reassigned. */
+  retranscribed: RetranscribedInfo | null
   /** Reload the record (and the session summary) after the transcript changed. */
   onReload: () => void
 }) {
   const jobs = useCampaign((s) => s.jobs)
   const [confirmRestore, setConfirmRestore] = useState(false)
+  const [confirmRetranscribe, setConfirmRetranscribe] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // The latest job of each kind for this session (insertion order; job ids are random).
@@ -68,15 +80,16 @@ export function TranscriptTools({
     return {
       improve: mine.filter((j) => j.kind === "improve").at(-1),
       spelling: mine.filter((j) => j.kind === "spelling").at(-1),
+      retranscribe: mine.filter((j) => j.kind === "retranscribe").at(-1),
     }
   }, [jobs, summary.id])
-  const running = (["improve", "spelling"] as const).filter((k) => latest[k] && jobActive(latest[k]))
+  const running = (["improve", "spelling", "retranscribe"] as const).filter((k) => latest[k] && jobActive(latest[k]))
   const anyRunning = running.length > 0
 
   // Only jobs seen running here count as "just finished" (not a done job from an earlier visit).
   const watched = useRef(new Set<string>())
   useEffect(() => {
-    for (const kind of ["improve", "spelling"] as const) {
+    for (const kind of ["improve", "spelling", "retranscribe"] as const) {
       const job = latest[kind]
       if (!job) continue
       if (jobActive(job)) watched.current.add(job.id)
@@ -114,7 +127,12 @@ export function TranscriptTools({
         <TooltipTrigger
           render={
             // One rewrite at a time per session: both buttons wait while either runs.
-            <Button size="sm" variant="outline" disabled={anyRunning || busy} onClick={() => start(kind)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={anyRunning || busy}
+              onClick={() => (kind === "retranscribe" ? setConfirmRetranscribe(true) : start(kind))}
+            >
               {isRunning ? <Loader2 className="animate-spin" /> : TOOLS[kind].icon}
               {TOOLS[kind].label}
               {isRunning && <span className="text-muted-foreground tabular-nums">{jobCount(job)}</span>}
@@ -129,7 +147,27 @@ export function TranscriptTools({
   return (
     <span className="flex flex-wrap items-center gap-2 text-xs">
       {summary.replayable && button("improve")}
+      {summary.audio && button("retranscribe")}
       {button("spelling")}
+      {confirmRetranscribe && (
+        <span className="inline-flex flex-wrap items-center gap-1.5 text-muted-foreground">
+          A copy of this transcript is saved first. Speakers you fixed by hand can still move. The words stay.
+          <Button
+            size="xs"
+            variant="destructive"
+            disabled={busy}
+            onClick={() => {
+              setConfirmRetranscribe(false)
+              void start("retranscribe")
+            }}
+          >
+            Retranscribe anyway
+          </Button>
+          <Button size="xs" variant="ghost" onClick={() => setConfirmRetranscribe(false)}>
+            Cancel
+          </Button>
+        </span>
+      )}
       {running.map((kind) =>
         latest[kind]?.message ? (
           <span key={kind} data-testid={`${kind}-status`} className="text-muted-foreground">
@@ -137,14 +175,14 @@ export function TranscriptTools({
           </span>
         ) : null,
       )}
-      {(["improve", "spelling"] as const).map((kind) =>
+      {(["improve", "spelling", "retranscribe"] as const).map((kind) =>
         latest[kind]?.state === "error" ? (
           <span key={kind} role="alert" className="inline-flex items-center gap-1 text-destructive">
             <AlertCircle className="size-3.5" /> {latest[kind].message || TOOLS[kind].failed}
           </span>
         ) : null,
       )}
-      {(improved || spelling) && !anyRunning && (
+      {(improved || spelling || retranscribed) && !anyRunning && (
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
           {improved && (
             <span>
@@ -153,6 +191,15 @@ export function TranscriptTools({
           )}
           {improved && spelling && <span aria-hidden>·</span>}
           {spelling && <span>Spellings fixed · {spelling.fixed}</span>}
+          {retranscribed && (
+            <span>
+              {(improved || spelling) && <span aria-hidden> · </span>}
+              Retranscribed · {retranscribed.changed} of {retranscribed.lines} reassigned
+              {retranscribed.heard_next > 0 && ` · ${retranscribed.heard_next} were hearing the next person`}
+              {retranscribed.rematch > 0 && ` · ${retranscribed.rematch} match someone else on their own audio`}
+              {` · previous copy: ${retranscribed.backup}`}
+            </span>
+          )}
           {confirmRestore ? (
             <>
               <Button size="xs" variant="destructive" disabled={busy} onClick={restore}>

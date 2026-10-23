@@ -101,6 +101,7 @@ export function SessionViewer({ summary, onBack }: { summary: SavedSession; onBa
             summary={summary}
             improved={state.status === "ready" ? state.record.improved : null}
             spelling={state.status === "ready" ? state.record.spelling : null}
+            retranscribed={state.status === "ready" ? (state.record.retranscribed ?? null) : null}
             onReload={reload}
           />
           <WriteUpButton sessionId={summary.id} />

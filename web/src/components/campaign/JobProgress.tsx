@@ -13,6 +13,8 @@ export function JobChip({ job: j }: { job: CampaignJob }) {
         ? `Improve ${j.title}`
         : j.kind === "spelling"
           ? `Spellings ${j.title}`
+          : j.kind === "retranscribe"
+            ? `Retranscribe ${j.title}`
           : j.kind === "backup"
             ? "Cloud backup"
             : j.kind === "restore"

@@ -337,6 +337,19 @@ def improve_transcript(sid: str):
         ).to_json()
 
 
+@app.post("/api/sessions/{sid}/retranscribe")
+def retranscribe(sid: str):
+    """Re-assign who spoke each line from the recording. Words stay; hand-set speakers can move.
+    The first original transcript is kept."""
+    _call(engine.session_file, sid, "json")
+    _call(session_audio, sid)
+    with campaign_gate:
+        _require_open_campaign(sid)
+        return memory.submit(
+            "retranscribe", sid, lambda job: improve.reassign_speakers(job, engine, sid, lambda: memory.emit(job))
+        ).to_json()
+
+
 @app.post("/api/sessions/{sid}/spelling")
 def fix_spellings(sid: str):
     """The spelling cleanup over a saved session (a background job; the original is kept)."""

@@ -19,7 +19,8 @@ import numpy as np
 from . import asr, cleanup, config, transcript
 from .audio import load_audio
 from .campaign import Corrector
-from .engine import Engine, session_audio
+from .engine import PROVISIONAL_BELOW, Engine, session_audio
+from .voices import MIN_EMBED_S, embed_span
 
 SR = config.SR
 
@@ -119,6 +120,124 @@ def save(folder: Path, record: dict) -> None:
         tmp = folder / f".{name}.tmp"
         tmp.write_text(body, encoding="utf-8")
         tmp.replace(folder / name)
+
+
+def speaker_window(
+    start: float, end: float, prev_end: float | None, next_start: float | None, pad_to: float = 1.5
+) -> tuple[float, float] | None:
+    """The audio that belongs to this line, not the line before or after it.
+
+    A short reply used to be labeled as whoever spoke next because the voiceprint read past
+    the end of the line. None when less than half a second of this line is left.
+    """
+    orig_end = end
+    if prev_end is not None:
+        start = max(start, prev_end)
+    if next_start is not None and next_start - orig_end <= pad_to:
+        end = min(end, next_start)
+        if next_start - orig_end < 0.5 and end - start > 0.7:
+            end -= 0.2
+    if end - start < MIN_EMBED_S:
+        return None
+    return start, end
+
+
+RETRANSCRIBE_BACKUP = "transcript.before-retranscribe.json"
+
+
+def reassign_speakers(job, engine: Engine, sid: str, emit: Callable[[], None]) -> None:
+    """Re-decide who spoke each line of a saved session, using the current voiceprints and
+    windows that stop at the next line. The words stay. Hand-corrected speakers are not marked
+    in the file, so they move too. The transcript as it is now is copied aside first."""
+    folder = engine.sessions_dir() / sid
+    current = (folder / "transcript.json").read_text()
+    backup = folder / RETRANSCRIBE_BACKUP
+    tmp = folder / ".transcript.before-retranscribe.json.tmp"
+    tmp.write_text(current)
+    tmp.replace(backup)
+    record = json.loads(current)
+    path, end = session_audio(sid)
+    audio = load_audio(path, 0.0, end)
+    if engine.matcher is None or not engine.matcher.names:
+        raise ValueError("Name the people in the voices panel first; there is nobody to match against.")
+    messages = sorted(record["messages"], key=lambda m: m["t_start"])
+    job.total = len(messages)
+    job.message = f"Backed up the transcript ({RETRANSCRIBE_BACKUP})"
+    emit()
+    changed = 0
+    heard_next = 0
+    rematch = 0
+    for i, m in enumerate(messages):
+        while engine.status != "idle":
+            job.message = "Paused while a session runs"
+            emit()
+            time.sleep(2)
+        prev_end = float(messages[i - 1]["t_end"]) if i else None
+        next_start = float(messages[i + 1]["t_start"]) if i + 1 < len(messages) else None
+        window = speaker_window(float(m["t_start"]), float(m["t_end"]), prev_end, next_start, engine.matcher.pad_to)
+        job.done = i + 1
+        job.message = f"Line {i + 1} of {len(messages)}"
+        if i % 20 == 0 or i + 1 == len(messages):
+            emit()
+        if window is None:
+            continue
+        with engine.embed_lock:
+            vec = embed_span(engine.matcher.embedder, audio, *window)
+        if vec is None:
+            continue
+        with engine.lock:
+            scores = engine.matcher.scores(vec)
+            best = int(np.argmax(scores))
+            name = engine.matcher.names[best]
+            score = float(scores[best])
+            if score < engine.matcher.unknown_below or name == m.get("voice_id"):
+                continue
+            voice = engine.voices.get(name)
+            if voice is None or voice.status != "named":
+                continue
+            player = engine.players.get(voice.player_id) if voice.player_id else None
+            m["voice_id"] = name
+            m["confidence"] = round(score, 3)
+            m["provisional"] = score < PROVISIONAL_BELOW
+            if player is not None:
+                m["speaker"] = player.name
+                m["player_id"] = player.id
+                m["character"] = voice.character
+            else:
+                m["speaker"] = voice.label or m.get("speaker") or "Unknown"
+                m["player_id"] = None
+                m["character"] = None
+            changed += 1
+            # The window ends before the saved line does only when the next person was close enough
+            # to have been inside the old voiceprint.
+            if window[1] < float(m["t_end"]) - 0.05:
+                heard_next += 1
+            else:
+                rematch += 1
+    record["messages"] = messages
+    why = []
+    if heard_next:
+        why.append(
+            f"{heard_next} because the next person started within 1.5 s and the old label was hearing them"
+        )
+    if rematch:
+        why.append(f"{rematch} because the line's own audio matches someone else")
+    summary = f"{changed} of {len(messages)} lines reassigned"
+    if why:
+        summary += ": " + "; ".join(why)
+    summary += f". Previous transcript saved as {RETRANSCRIBE_BACKUP}."
+    record["session"] = record["session"] | {
+        "retranscribed": {
+            "at": time.time(),
+            "changed": changed,
+            "lines": len(messages),
+            "heard_next": heard_next,
+            "rematch": rematch,
+            "backup": RETRANSCRIBE_BACKUP,
+        }
+    }
+    save(folder, record)
+    job.message = summary
 
 
 def fix_spellings(job, engine: Engine, sid: str, emit: Callable[[], None]) -> None:
