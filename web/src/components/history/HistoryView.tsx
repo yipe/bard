@@ -197,16 +197,16 @@ function HistoryList() {
             </p>
           ) : (
             <>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
-                  {matchCount
-                    ? `${matchCount} session${matchCount === 1 ? "" : "s"} start within 10 minutes of another ending.`
-                    : "Nothing in this history starts within 10 minutes of the session before it."}
-                </p>
-                <Button size="sm" variant="outline" disabled={merging || matchCount === 0} onClick={() => void mergeMatching()}>
-                  Merge matching sessions
-                </Button>
-              </div>
+              {matchCount > 0 && (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {matchCount} session{matchCount === 1 ? "" : "s"} start within 10 minutes of another ending.
+                  </p>
+                  <Button size="sm" variant="outline" disabled={merging} onClick={() => void mergeMatching()}>
+                    Merge matching sessions
+                  </Button>
+                </div>
+              )}
               {progress && (
                 <div className="mb-3 space-y-1.5">
                   <p className="text-sm">
