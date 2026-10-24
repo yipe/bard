@@ -57,7 +57,7 @@ Environment variables (see `backend/src/troubadour/config.py`):
 |---|---|---|
 | `HF_TOKEN` | — | Hugging Face token (`HUGGING_FACE_TOKEN` also works) |
 | `TROUBADOUR_HOST` / `TROUBADOUR_PORT` | `127.0.0.1` / `8765` | where the app listens |
-| `TROUBADOUR_DATA` | `backend/data` | players, voiceprints, sessions, recordings |
+| `TROUBADOUR_DATA` | `~/troubador` | players, voiceprints, sessions, recordings |
 | `TROUBADOUR_VAULT` | `$TROUBADOUR_DATA/campaign` | campaign wiki; point it at a folder in an existing Obsidian vault |
 | `TROUBADOUR_LLM_URL` / `TROUBADOUR_LLM_MODEL` | LM Studio, gemma | LLM for spelling cleanup |
 | `TROUBADOUR_MEMORY_MODEL` / `TROUBADOUR_MEMORY_REASONING` | same model / `none` | LLM for notes and write-ups |
@@ -72,7 +72,7 @@ Troubadour was called Bard before. Setups from then keep working: a `BARD_*` var
 
 - Troubadour binds to `127.0.0.1` with no auth, by design; Host and Origin checks stop other websites in
   your browser from reaching the API.
-- Everything Troubadour stores lives in `backend/data/` (git-ignored): voiceprints and recordings of the
+- Everything Troubadour stores lives in `~/troubador/` (git-ignored): voiceprints and recordings of the
   people at your table. Ask before you record people.
 
 ## Development

@@ -36,7 +36,8 @@ ASR_CONTEXT_LINES = 2
 CLEANUP = env("CLEANUP", "1") != "0"
 DIARIZER = "pyannote/speaker-diarization-community-1"  # only its speaker-embedding model is used
 
-DATA_DIR = Path(env("DATA", str(BACKEND / "data")))
+# Outside the repo so every checkout/worktree shares one set of players, recordings and vault.
+DATA_DIR = Path(env("DATA", str(Path.home() / "troubador")))
 SAMPLES_DIR = Path(env("SAMPLES", str(BACKEND / "samples" / "eval")))
 WEB_DIST = REPO / "web" / "dist"
 # Troubadour Cloud (optional backup + web view of the campaign vault). Nothing is sent until the user connects.

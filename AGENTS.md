@@ -28,14 +28,14 @@ The shell may have `CI=true`: a first `yarn install` needs `--no-immutable`.
 backend/src/troubadour/   engine, server, ASR, voices, audio quality, campaign memory, spelling cleanup
 backend/tests/      pytest; no models or network needed
 backend/spike/      research and ops scripts (benchmarks, soak tests, harden_check)
-backend/data/       USER DATA, git-ignored: state, recordings, sessions, campaign vault
+~/troubador/       USER DATA, git-ignored: state, recordings, sessions, campaign vault
 web/src/            React 19 + Vite + Tailwind v4 + shadcn/ui
 web/dist/           built UI, served by the backend (git-ignored)
 ```
 
 ## Hard rules
 
-1. **Never touch `backend/data/`** in tests or experiments. It holds real players, voiceprints, hours
+1. **Never touch `~/troubador/`** in tests or experiments. It holds real players, voiceprints, hours
    of recordings and the user's Obsidian vault. Tests use tmp dirs (the `dirs`/`engine` fixtures).
    For a scratch server: `TROUBADOUR_PORT=8767 TROUBADOUR_DATA=/tmp/<name> uv run troubadour`.
 2. **Never play audio** on the machine. Browsers you drive must be headless with `--mute-audio`.
@@ -48,7 +48,7 @@ web/dist/           built UI, served by the backend (git-ignored)
 5. **Licensed data and privacy (this repo is public):** only SRD names (CC-BY-4.0, attributed) are
    committed (`backend/src/troubadour/srd_terms.json`); check additions against the SRD text. No other
    D&D product content, no real people's names (tests use made-up players), and don't name where
-   a larger local list (`backend/data/dnd_terms.json`) comes from. `backend/local/` is git-ignored
+   a larger local list (`~/troubador/dnd_terms.json`) comes from. `backend/local/` is git-ignored
    for local-only tools.
 6. `yarn check` must pass before a commit. Small, focused commits; push to `origin main`; never
    force-push without the owner's say-so.

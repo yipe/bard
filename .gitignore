@@ -1,6 +1,6 @@
 # --- Local data: never commit -------------------------------------------------
 # Players, voiceprints, and Train recordings (people's voices).
-backend/data/
+backend/data
 # Benchmark audio, downloaded episodes, model caches, results (~1.2 GB).
 backend/samples/
 # Local-only tools that read third-party data (e.g. the D&D vocabulary generator).
